@@ -1,14 +1,19 @@
-import 'package:collectable/screens/settings_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'screens/onboarding_loading_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_overview_screen.dart';
 import 'screens/add_book_screen.dart';
 import 'screens/export_screen.dart';
+
+import 'package:collectable/screens/settings_screen.dart';
+import 'package:collectable/screens/book_detail_screen.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,26 +31,60 @@ class _AuthStateNotifier extends ChangeNotifier {
   }
 }
 
+CustomTransitionPage noTransitionPage({
+  required BuildContext context,
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+  );
+}
+
 final _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/onboarding',
   refreshListenable: _AuthStateNotifier(),
   redirect: (context, state) async {
     final user = FirebaseAuth.instance.currentUser;
     final isLoggedIn = user != null;
     final isLoginRoute = state.matchedLocation == '/login';
+    final isOnboardingRoute = state.matchedLocation == '/onboarding';
 
+    if (isOnboardingRoute) return null;
     if (!isLoggedIn && !isLoginRoute) return '/login';
     if (isLoggedIn && isLoginRoute) return '/';
     return null;
   },
   routes: [
     GoRoute(
+      path: '/onboarding',
+      pageBuilder: (context, state) => noTransitionPage(
+        context: context, state: state, child: const OnboardingLoadingScreen(),
+      ),
+    ),
+    GoRoute(
       path: '/login',
-      builder: (context, state) => const LoginScreen(),
+      pageBuilder: (context, state) => noTransitionPage(
+        context: context, state: state, child: const LoginScreen(),
+      ),
     ),
     GoRoute(
       path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
+      pageBuilder: (context, state) => noTransitionPage(
+        context: context, state: state, child: const SettingsScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/book/:id',
+      pageBuilder: (context, state) => noTransitionPage(
+        context: context,
+        state: state,
+        child: BookDetailScreen(bookId: state.pathParameters['id']!),
+      ),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
@@ -53,13 +92,28 @@ final _router = GoRouter(
       },
       branches: [
         StatefulShellBranch(routes: [
-          GoRoute(path: '/', builder: (context, state) => const HomeOverviewScreen()),
+          GoRoute(
+            path: '/',
+            pageBuilder: (context, state) => noTransitionPage(
+              context: context, state: state, child: const HomeOverviewScreen(),
+            ),
+          ),
         ]),
         StatefulShellBranch(routes: [
-          GoRoute(path: '/add', builder: (context, state) => const AddBookScreen()),
+          GoRoute(
+            path: '/add',
+            pageBuilder: (context, state) => noTransitionPage(
+              context: context, state: state, child: const AddBookScreen(),
+            ),
+          ),
         ]),
         StatefulShellBranch(routes: [
-          GoRoute(path: '/export', builder: (context, state) => const ExportScreen()),
+          GoRoute(
+            path: '/export',
+            pageBuilder: (context, state) => noTransitionPage(
+              context: context, state: state, child: const ExportScreen(),
+            ),
+          ),
         ]),
       ],
     ),
@@ -71,7 +125,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return MaterialApp.router(
       title: 'Collectable',
       theme: ThemeData(
@@ -100,7 +153,8 @@ class MyApp extends StatelessWidget {
 
 const kTextColor = Color(0xFF2C3E50);
 
-PreferredSizeWidget buildAppBar(BuildContext context, {required String title, bool showSettings = true}) {
+PreferredSizeWidget buildAppBar(BuildContext context,
+    {required String title, bool showSettings = true}) {
   return AppBar(
     backgroundColor: Colors.transparent,
     elevation: 0,
@@ -156,7 +210,8 @@ class ScaffoldWithNavBar extends StatelessWidget {
           child: NavigationBar(
             backgroundColor: Colors.transparent,
             selectedIndex: navigationShell.currentIndex,
-            onDestinationSelected: (index) => navigationShell.goBranch(index),
+            onDestinationSelected: (index) =>
+                navigationShell.goBranch(index),
             indicatorColor: Colors.white.withOpacity(0.4),
             destinations: const [
               NavigationDestination(
