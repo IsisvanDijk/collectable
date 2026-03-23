@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "628935225637",
+    "project_id": "collectable-app-2026",
+    "storage_bucket": "collectable-app-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:628935225637:android:db6b180ddc3b957faeeacc",
+        "android_client_info": {
+          "package_name": "com.example.collectable"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "628935225637-utuic3bk1v1d7f1u5cu6kauj1cerkg6b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLiOk4pT_24IQxjap3fTSUKs1gqE-MEeI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "628935225637-utuic3bk1v1d7f1u5cu6kauj1cerkg6b.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "628935225637-03r5j8jbb6s8i794g0b34reli7cvs6fm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.isis.collectable"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:628935225637:android:48c4a8d7fd6f2ecdaeeacc",
+        "android_client_info": {
+          "package_name": "com.isis.collectable"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "628935225637-utuic3bk1v1d7f1u5cu6kauj1cerkg6b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLiOk4pT_24IQxjap3fTSUKs1gqE-MEeI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "628935225637-utuic3bk1v1d7f1u5cu6kauj1cerkg6b.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "628935225637-03r5j8jbb6s8i794g0b34reli7cvs6fm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.isis.collectable"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
