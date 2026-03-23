@@ -43,6 +43,8 @@ dependencies:
   go_router: ^17.1.0
   image_picker: ^1.0.4
   flutter_svg: ^2.0.5
+  mobile_scanner: ^7.2.0
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -99,7 +101,7 @@ flutter:
   assets:
     - assets/images/Background.svg
     - assets/images/Empty-shelf.png
-    - assets/images/Image1.png
+    - assets/images/Filled-shelf.png
   fonts:
     - family: Afacad
       fonts:

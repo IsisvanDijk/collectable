@@ -39,7 +39,7 @@ class _OnboardingLoadingScreenState extends State<OnboardingLoadingScreen> {
 
               // Bookshelf image
               Image.asset(
-                'assets/images/Image1.png',
+                'assets/images/Filled-shelf.png',
                 width: MediaQuery.of(context).size.width * 0.55,
               ),
 

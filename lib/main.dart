@@ -152,6 +152,7 @@ class MyApp extends StatelessWidget {
 }
 
 const kTextColor = Color(0xFF2C3E50);
+const kButtonRed = Color(0xFF521121);
 
 PreferredSizeWidget buildAppBar(BuildContext context,
     {required String title, bool showSettings = true}) {

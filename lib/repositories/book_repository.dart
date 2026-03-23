@@ -44,7 +44,7 @@ class BookRepository {
   Future<void> add(Book book) async {
     final bookWithUser = Book(
       id: book.id,
-      userId: _uid, // always overwrite — never trust caller
+      userId: _uid,
       title: book.title,
       author: book.author,
       isbn: book.isbn,
@@ -56,14 +56,15 @@ class BookRepository {
       condition: book.condition,
       signed: book.signed,
       signedBy: book.signedBy,
-      hasCertificate: book.hasCertificate,
       provenance: book.provenance,
       notes: book.notes,
       photoUrls: book.photoUrls,
       dateAdded: book.dateAdded,
       dateUpdated: book.dateUpdated,
     );
-    await _collection.doc(book.id).set(bookWithUser.toMap());
+
+    // Schrijf zonder te wachten op server-bevestiging
+    _collection.doc(book.id).set(bookWithUser.toMap());
   }
 
   /// Update an existing book (partial update via copyWith is handled by caller).

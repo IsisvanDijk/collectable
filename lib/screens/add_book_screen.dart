@@ -1,13 +1,15 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import '../models/book.dart';
 import '../repositories/book_repository.dart';
+import '../services/book_lookup_service.dart';
 import '../main.dart';
 
-const kButtonRed = Color(0xFF521121);
 const kButtonPink = Color(0xFFE6C5CA);
 
 class AddBookScreen extends StatefulWidget {
@@ -18,23 +20,111 @@ class AddBookScreen extends StatefulWidget {
 }
 
 class _AddBookScreenState extends State<AddBookScreen> {
+  final MobileScannerController _scannerController = MobileScannerController();
+  bool _hasScanned = false;
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _authorController = TextEditingController();
   final _isbnController = TextEditingController();
   final _editionController = TextEditingController();
   final _printRunController = TextEditingController();
+  final _publisherController = TextEditingController();
+  final _publishYearController = TextEditingController();
+  final _signedByController = TextEditingController();
+  final _provenanceController = TextEditingController();
   final _notesController = TextEditingController();
   BookCondition _condition = BookCondition.mint;
   bool _signed = false;
+  int? _publishYear;
+  String? _prefillCoverUrl;
   List<String> _photoUrls = [];
   bool _isLoading = false;
   bool _isManual = true;
 
   final ImagePicker _picker = ImagePicker();
 
+  @override
+  void dispose() {
+    _scannerController.dispose();
+    _titleController.dispose();
+    _authorController.dispose();
+    _isbnController.dispose();
+    _editionController.dispose();
+    _printRunController.dispose();
+    _publisherController.dispose();
+    _publishYearController.dispose();
+    _signedByController.dispose();
+    _provenanceController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  void _resetForm() {
+    _titleController.clear();
+    _authorController.clear();
+    _isbnController.clear();
+    _editionController.clear();
+    _printRunController.clear();
+    _publisherController.clear();
+    _publishYearController.clear();
+    _signedByController.clear();
+    _provenanceController.clear();
+    _notesController.clear();
+    setState(() {
+      _condition = BookCondition.mint;
+      _signed = false;
+      _publishYear = null;
+      _prefillCoverUrl = null;
+      _photoUrls = [];
+      _isLoading = false;
+      _isManual = true;
+      _hasScanned = false;
+    });
+  }
+
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // drag handle
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(
+                      Icons.camera_alt_outlined, color: kTextColor),
+                  title: const Text('Take a photo'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(
+                      Icons.photo_library_outlined, color: kTextColor),
+                  title: const Text('Choose from gallery'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+    );
+    if (source == null) return;
+
+    final XFile? image = await _picker.pickImage(source: source);
     if (image != null) {
       setState(() => _isLoading = true);
       try {
@@ -54,8 +144,48 @@ class _AddBookScreenState extends State<AddBookScreen> {
     }
   }
 
+  void _onDetect(BarcodeCapture capture) async {
+    if (_hasScanned || _isLoading) return;
+    final barcode = capture.barcodes.firstOrNull;
+    final value = barcode?.rawValue;
+    if (value == null) return;
+    if (value.length != 13 && value.length != 10) return;
+
+    _hasScanned = true;
+    _scannerController.stop();
+    setState(() => _isLoading = true);
+
+    final result = await BookLookupService().lookup(value);
+
+    if (result.isNotEmpty) {
+      _titleController.text = result['title'] ?? '';
+      _authorController.text = result['author'] ?? '';
+      _publisherController.text = result['publisher'] ?? '';
+      _isbnController.text = value;
+      if (result['publishYear'] != null) {
+        _publishYear = result['publishYear'];
+      }
+      if (result['coverImageUrl'] != null) {
+        _prefillCoverUrl = result['coverImageUrl'];
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('No book found — please fill in manually')),
+        );
+      }
+    }
+
+    setState(() {
+      _isManual = true;
+      _isLoading = false;
+    });
+  }
+
   Future<void> _saveBook() async {
     if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
     try {
       final book = Book(
@@ -64,22 +194,39 @@ class _AddBookScreenState extends State<AddBookScreen> {
         title: _titleController.text,
         author: _authorController.text,
         isbn: _isbnController.text.isEmpty ? null : _isbnController.text,
-        edition: _editionController.text.isEmpty ? null : _editionController.text,
-        printRun: _printRunController.text.isEmpty ? null : _printRunController.text,
+        publisher: _publisherController.text.isEmpty
+            ? null
+            : _publisherController.text,
+        publishYear: _publishYear,
+        coverImageUrl: _prefillCoverUrl,
+        edition: _editionController.text.isEmpty ? null : _editionController
+            .text,
+        printRun: _printRunController.text.isEmpty ? null : _printRunController
+            .text,
         condition: _condition,
         signed: _signed,
+        signedBy: _signedByController.text.isEmpty ? null : _signedByController
+            .text,
+        provenance: _provenanceController.text.isEmpty
+            ? null
+            : _provenanceController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         photoUrls: _photoUrls,
         dateAdded: DateTime.now(),
       );
+      print('=== BOOK CREATED ===');
       await BookRepository().add(book);
-      if (mounted) Navigator.of(context).pop();
+      print('=== BOOK SAVED TO FIRESTORE ===');
+      if (!mounted) return;
+      _resetForm();
+      StatefulNavigationShell.maybeOf(context)?.goBranch(0);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save book: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save book: $e')),
+        );
+      }
     }
   }
 
@@ -89,6 +236,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
     int maxLines = 1,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    void Function(String)? onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -101,12 +249,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
         maxLines: maxLines,
         keyboardType: keyboardType,
         validator: validator,
+        onChanged: onChanged,
         style: const TextStyle(color: kTextColor),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: kTextColor.withOpacity(0.8)),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20, vertical: 14),
         ),
       ),
     );
@@ -118,13 +268,20 @@ class _AddBookScreenState extends State<AddBookScreen> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _isManual = false),
+              onTap: () {
+                setState(() {
+                  _isManual = false;
+                  _hasScanned = false;
+                });
+                _scannerController.start();
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   color: !_isManual ? kButtonPink : Colors.white,
-                  borderRadius: BorderRadius.horizontal(left: Radius.circular(40)),
+                  borderRadius: BorderRadius.horizontal(
+                      left: Radius.circular(40)),
                 ),
                 child: Text(
                   'Scan ISBN',
@@ -139,13 +296,17 @@ class _AddBookScreenState extends State<AddBookScreen> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _isManual = true),
+              onTap: () {
+                setState(() => _isManual = true);
+                _scannerController.stop();
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   color: _isManual ? kButtonPink : Colors.white,
-                  borderRadius: BorderRadius.horizontal(right: Radius.circular(40)),
+                  borderRadius: BorderRadius.horizontal(
+                      right: Radius.circular(40)),
                 ),
                 child: Text(
                   'Manual entry',
@@ -168,175 +329,256 @@ class _AddBookScreenState extends State<AddBookScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: buildAppBar(context, title: 'Add book'),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-          children: [
-            _buildToggleBar(),
-            const SizedBox(height: 24),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+            children: [
+              _buildToggleBar(),
+              const SizedBox(height: 24),
 
-            if (_isManual) ...[
-              Row(
-                children: [
-                  Expanded(child: _buildPillField(
-                    controller: _titleController,
-                    hint: 'Title',
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
-                  )),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildPillField(
-                    controller: _authorController,
-                    hint: 'Author',
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
-                  )),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: _buildPillField(
-                    controller: _isbnController,
-                    hint: 'ISBN?',
-                    keyboardType: TextInputType.number,
-                  )),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildPillField(
-                    controller: _printRunController,
-                    hint: 'Print',
-                  )),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(child: _buildPillField(
-                    controller: _editionController,
-                    hint: 'Edition',
-                  )),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(40),
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<BookCondition>(
-                          value: _condition,
-                          dropdownColor: Colors.white,
-                          style: const TextStyle(color: kTextColor),
-                          hint: const Text('Condition',
-                              style: TextStyle(color: kTextColor)),
-                          items: BookCondition.values
-                              .map((c) => DropdownMenuItem(
-                            value: c,
-                            child: Text(c.name),
-                          ))
-                              .toList(),
-                          onChanged: (value) =>
-                              setState(() => _condition = value!),
+              if (_isManual) ...[
+                Row(
+                  children: [
+                    Expanded(child: _buildPillField(
+                      controller: _titleController,
+                      hint: 'Title',
+                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildPillField(
+                      controller: _authorController,
+                      hint: 'Author',
+                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                    )),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _buildPillField(
+                      controller: _isbnController,
+                      hint: 'ISBN?',
+                      keyboardType: TextInputType.number,
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildPillField(
+                      controller: _printRunController,
+                      hint: 'Print',
+                    )),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _buildPillField(
+                      controller: _editionController,
+                      hint: 'Edition',
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(40),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<BookCondition>(
+                            value: _condition,
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: kTextColor),
+                            hint: const Text('Condition',
+                                style: TextStyle(color: kTextColor)),
+                            items: BookCondition.values
+                                .map((c) =>
+                                DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.name),
+                                ))
+                                .toList(),
+                            onChanged: (value) =>
+                                setState(() => _condition = value!),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Signed?',
-                        style: TextStyle(color: kTextColor, fontSize: 16)),
-                    Switch(
-                      value: _signed,
-                      onChanged: (value) => setState(() => _signed = value),
-                      activeColor: kButtonRed,
-                    ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              _buildPillField(
-                controller: _notesController,
-                hint: 'Notes',
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _buildPillField(
+                      controller: _publisherController,
+                      hint: 'Publisher',
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildPillField(
+                      controller: _publishYearController,
+                      hint: 'Year published',
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        setState(() {
+                          _publishYear = int.tryParse(value);
+                        });
+                      },
+                    )),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(40),
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 4),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Add photo's",
-                          style: TextStyle(
-                              color: kTextColor.withOpacity(0.5), fontSize: 16)),
-                      Icon(Icons.camera_alt_outlined,
-                          color: kTextColor.withOpacity(0.5)),
+                      const Text('Signed?',
+                          style: TextStyle(color: kTextColor, fontSize: 16)),
+                      Switch(
+                        value: _signed,
+                        onChanged: (value) => setState(() => _signed = value),
+                        activeColor: kButtonRed,
+                      ),
                     ],
                   ),
                 ),
-              ),
-              if (_photoUrls.isNotEmpty) ...[
+                if (_signed) ...[
+                  const SizedBox(height: 12),
+                  _buildPillField(
+                    controller: _signedByController,
+                    hint: 'Signed by...',
+                  ),
+                ],
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  children: _photoUrls
-                      .map((url) => ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(url,
-                        width: 80, height: 80, fit: BoxFit.cover),
-                  ))
-                      .toList(),
+                _buildPillField(
+                  controller: _provenanceController,
+                  hint: 'Provenance / where acquired',
+                  maxLines: 2,
                 ),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveBook,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kButtonRed,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
+                const SizedBox(height: 12),
+                _buildPillField(
+                  controller: _notesController,
+                  hint: 'Notes',
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(40),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Add photo's",
+                            style: TextStyle(
+                                color: kTextColor.withOpacity(0.5),
+                                fontSize: 16)),
+                        Icon(Icons.camera_alt_outlined,
+                            color: kTextColor.withOpacity(0.5)),
+                      ],
                     ),
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Save to collection',
+                ),
+                if (_photoUrls.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    children: _photoUrls
+                        .map((url) =>
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(url,
+                              width: 80, height: 80, fit: BoxFit.cover),
+                        ))
+                        .toList(),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _saveBook,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kButtonRed,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(40),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Save to collection',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ] else
+                ...[
+                  const SizedBox(height: 40),
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: SizedBox(
+                        width: 260,
+                        height: 260,
+                        child: _isLoading
+                            ? Container(
+                          color: Colors.white.withOpacity(0.3),
+                          child: const Center(
+                              child: CircularProgressIndicator()),
+                        )
+                            : MobileScanner(
+                          controller: _scannerController,
+                          onDetect: _onDetect,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      'Center the ISBN in the frame',
                       style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600)),
-                ),
-              ),
-            ] else ...[
-              // ISBN scan placeholder — you'll fill this in later
-              const SizedBox(height: 40),
-              Center(
-                child: Text(
-                  'ISBN scanning coming soon',
-                  style: TextStyle(color: kTextColor.withOpacity(0.6)),
-                ),
-              ),
+                          color: kTextColor.withOpacity(0.5), fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kButtonRed,
+                        disabledBackgroundColor: kButtonRed.withOpacity(0.4),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                      ),
+                      child: const Text('Next',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
             ],
-          ],
+          ),
         ),
       ),
     );

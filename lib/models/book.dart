@@ -37,7 +37,6 @@ class Book {
   final BookCondition condition;
   final bool signed;
   final String? signedBy;      // who signed it
-  final bool hasCertificate;   // certificate of authenticity present
 
   // ── Insurance fields ──────────────────────────────────────────────────────
   final String? provenance;       // herkomst / where/how acquired
@@ -66,7 +65,6 @@ class Book {
     required this.condition,
     required this.signed,
     this.signedBy,
-    this.hasCertificate = false,
     this.provenance,
     this.notes,
     required this.photoUrls,
@@ -90,7 +88,6 @@ class Book {
       'condition': condition.name,
       'signed': signed,
       'signedBy': signedBy,
-      'hasCertificate': hasCertificate,
       'provenance': provenance,
       'notes': notes,
       'photoUrls': photoUrls,
@@ -118,7 +115,6 @@ class Book {
       ),
       signed: map['signed'] as bool? ?? false,
       signedBy: map['signedBy'] as String?,
-      hasCertificate: map['hasCertificate'] as bool? ?? false,
       provenance: map['provenance'] as String?,
       notes: map['notes'] as String?,
       photoUrls: List<String>.from(map['photoUrls'] as List? ?? []),
@@ -143,7 +139,6 @@ class Book {
     BookCondition? condition,
     bool? signed,
     String? signedBy,
-    bool? hasCertificate,
     String? provenance,
     String? notes,
     List<String>? photoUrls,
@@ -162,7 +157,6 @@ class Book {
       condition: condition ?? this.condition,
       signed: signed ?? this.signed,
       signedBy: signedBy ?? this.signedBy,
-      hasCertificate: hasCertificate ?? this.hasCertificate,
       provenance: provenance ?? this.provenance,
       notes: notes ?? this.notes,
       photoUrls: photoUrls ?? this.photoUrls,
