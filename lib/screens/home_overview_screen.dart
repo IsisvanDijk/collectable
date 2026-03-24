@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -318,16 +319,27 @@ class _BookCard extends StatelessWidget {
       imageUrl = book.coverImageUrl;
     }
 
-    return imageUrl != null
-        ? Image.network(
-      imageUrl,
+    if (imageUrl == null) {
+      return Container(
+        width: double.infinity,
+        color: Colors.grey.shade300,
+        child: const Icon(Icons.menu_book_outlined, size: 50, color: Colors.grey),
+      );
+    }
+
+    // Local file path → FileImage, remote URL → NetworkImage
+    final isLocal = imageUrl.startsWith('/') || imageUrl.startsWith('file://');
+
+    return Image(
+      image: isLocal ? FileImage(File(imageUrl.replaceFirst('file://', ''))) as ImageProvider
+                     : NetworkImage(imageUrl),
       width: double.infinity,
       fit: BoxFit.cover,
-    )
-        : Container(
-      width: double.infinity,
-      color: Colors.grey.shade300,
-      child: const Icon(Icons.menu_book_outlined, size: 50, color: Colors.grey),
+      errorBuilder: (context, error, stackTrace) => Container(
+        width: double.infinity,
+        color: Colors.grey.shade300,
+        child: const Icon(Icons.menu_book_outlined, size: 50, color: Colors.grey),
+      ),
     );
   }
 

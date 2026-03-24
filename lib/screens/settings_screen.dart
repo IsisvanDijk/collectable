@@ -1,12 +1,13 @@
+import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
-import 'dart:io';
 import '../main.dart';
-import 'add_book_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -21,13 +22,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
+  String? _profileImagePath;
 
   @override
   void initState() {
     super.initState();
+    _loadProfileImage();
     final user = FirebaseAuth.instance.currentUser;
     _usernameController.text = user?.displayName ?? '';
     _emailController.text = user?.email ?? '';
+  }
+
+  Future<void> _loadProfileImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _profileImagePath = prefs.getString('profileImagePath');
+    });
   }
 
   @override
@@ -43,17 +53,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (image == null) return;
     setState(() => _isLoading = true);
     try {
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('profile_photos/${const Uuid().v4()}.jpg');
-      await ref.putFile(File(image.path));
-      final url = await ref.getDownloadURL();
-      await FirebaseAuth.instance.currentUser?.updatePhotoURL(url);
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = '${const Uuid().v4()}.jpg';
+      final localPath = p.join(appDir.path, 'profile_photos', fileName);
+      await Directory(p.dirname(localPath)).create(recursive: true);
+      await File(image.path).copy(localPath);
+      _profileImagePath = localPath;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profileImagePath', localPath);
       setState(() {});
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to upload photo: $e')),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save photo: $e')),
       );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -69,20 +83,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (_emailController.text.isNotEmpty &&
           _emailController.text != user?.email) {
         await user?.verifyBeforeUpdateEmail(_emailController.text);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Verification email sent to new address')),
         );
+        }
       }
       if (_passwordController.text.isNotEmpty) {
         await user?.updatePassword(_passwordController.text);
       }
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Settings saved')),
       );
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -112,7 +132,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final photoUrl = user?.photoURL;
     final username = user?.displayName ?? 'Username';
 
     return Scaffold(
@@ -140,8 +159,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 radius: 52,
                 backgroundColor: const Color(0xFFE6C5CA),
                 backgroundImage:
-                photoUrl != null ? NetworkImage(photoUrl) : null,
-                child: photoUrl == null
+                _profileImagePath != null ? FileImage(File(_profileImagePath!)) : null,
+                child: _profileImagePath == null
                     ? const Icon(Icons.person, size: 48, color: Colors.white)
                     : null,
               ),

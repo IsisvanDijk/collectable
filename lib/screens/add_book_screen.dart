@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -86,41 +87,36 @@ class _AddBookScreenState extends State<AddBookScreen> {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // drag handle
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ListTile(
-                  leading: const Icon(
-                      Icons.camera_alt_outlined, color: kTextColor),
-                  title: const Text('Take a photo'),
-                  onTap: () => Navigator.pop(context, ImageSource.camera),
-                ),
-                ListTile(
-                  leading: const Icon(
-                      Icons.photo_library_outlined, color: kTextColor),
-                  title: const Text('Choose from gallery'),
-                  onTap: () => Navigator.pop(context, ImageSource.gallery),
-                ),
-              ],
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: kTextColor),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
-          ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: kTextColor),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
     );
     if (source == null) return;
 
@@ -128,15 +124,17 @@ class _AddBookScreenState extends State<AddBookScreen> {
     if (image != null) {
       setState(() => _isLoading = true);
       try {
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('book_photos/${Uuid().v4()}.jpg');
-        await ref.putFile(File(image.path));
-        final url = await ref.getDownloadURL();
-        setState(() => _photoUrls.add(url));
-      } catch (e) {
+        final appDir = await getApplicationDocumentsDirectory();
+        final fileName = '${const Uuid().v4()}.jpg';
+        final localPath = p.join(appDir.path, 'book_photos', fileName);
+        await Directory(p.dirname(localPath)).create(recursive: true);
+        await File(image.path).copy(localPath);
+        setState(() => _photoUrls.add(localPath));
+      } catch (e, stackTrace) {
+        print('=== PHOTO ERROR: $e');
+        print(stackTrace);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload image: $e')),
+          SnackBar(content: Text('Failed to save photo: ${e.toString()}')),
         );
       } finally {
         setState(() => _isLoading = false);
@@ -445,7 +443,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       Switch(
                         value: _signed,
                         onChanged: (value) => setState(() => _signed = value),
-                        activeColor: kButtonRed,
+                        activeThumbColor: kButtonRed,
                       ),
                     ],
                   ),
@@ -470,43 +468,74 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 12),
-                GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(40),
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 14),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Add photo's",
-                            style: TextStyle(
-                                color: kTextColor.withOpacity(0.5),
-                                fontSize: 16)),
-                        Icon(Icons.camera_alt_outlined,
-                            color: kTextColor.withOpacity(0.5)),
-                      ],
-                    ),
+                SizedBox(
+                  height: 100,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      // Bestaande foto's
+                      ..._photoUrls.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final path = entry.value;
+                        return Stack(
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  File(path),
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            // Verwijder-knop
+                            Positioned(
+                              top: 4, right: 12,
+                              child: GestureDetector(
+                                onTap: () => setState(() => _photoUrls.removeAt(index)),
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  padding: const EdgeInsets.all(4),
+                                  child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+
+                      // Foto toevoegen knop
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 100, height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo_outlined,
+                                  color: kTextColor.withOpacity(0.5)),
+                              const SizedBox(height: 4),
+                              Text('Add photo',
+                                  style: TextStyle(
+                                      color: kTextColor.withOpacity(0.5), fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (_photoUrls.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    children: _photoUrls
-                        .map((url) =>
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(url,
-                              width: 80, height: 80, fit: BoxFit.cover),
-                        ))
-                        .toList(),
-                  ),
-                ],
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -584,3 +613,4 @@ class _AddBookScreenState extends State<AddBookScreen> {
     );
   }
 }
+

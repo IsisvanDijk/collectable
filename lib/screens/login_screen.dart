@@ -47,9 +47,11 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       if (mounted) context.go('/');
     } on FirebaseAuthException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Error')),
       );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -65,9 +67,11 @@ class _LoginScreenState extends State<LoginScreen> {
     await FirebaseAuth.instance.sendPasswordResetEmail(
       email: _emailController.text.trim(),
     );
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Password reset email sent')),
     );
+    }
   }
 
   Widget _buildPillField({
