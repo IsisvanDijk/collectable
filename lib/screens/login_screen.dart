@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../main.dart';
 import 'add_book_screen.dart';
+import '../widgets/narrow_layout.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -163,7 +164,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      // Let the scaffold stay full-screen; we handle keyboard insets manually.
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -176,129 +176,117 @@ class _LoginScreenState extends State<LoginScreen> {
           SafeArea(
             child: SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              // Pad the bottom by the keyboard height so the content scrolls
-              // up just enough to stay visible — without any layout jump.
               padding: EdgeInsets.only(bottom: bottomInset + 24),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: screenHeight * 0.75),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(height: screenHeight * 0.10),
+                child: NarrowLayout(
+  child: Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 32),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(height: screenHeight * 0.10),
+        const Text(
+          'COLLECTABLE',
+          style: TextStyle(
+            color: kTextColor,
+            fontSize: 36,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 4,
+          ),
+        ),
 
-                      // Title
-                      const Text(
-                        'COLLECTABLE',
-                        style: TextStyle(
-                          color: kTextColor,
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 4,
-                        ),
-                      ),
+        const SizedBox(height: 32),
 
-                      const SizedBox(height: 32),
+        Icon(
+          Icons.menu_book_outlined,
+          size: 64,
+          color: kTextColor.withOpacity(0.4),
+        ),
 
-                      // Book icon
-                      Icon(
-                        Icons.menu_book_outlined,
-                        size: 64,
-                        color: kTextColor.withOpacity(0.4),
-                      ),
+        const SizedBox(height: 32),
 
-                      const SizedBox(height: 32),
+        _buildToggleBar(),
 
-                      // Toggle
-                      _buildToggleBar(),
+        const SizedBox(height: 32),
 
-                      const SizedBox(height: 32),
+        AnimatedOpacity(
+          opacity: _isLogin ? 0.0 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: IgnorePointer(
+            ignoring: _isLogin,
+            child: _buildPillField(
+              controller: _nameController,
+              hint: 'Name...',
+            ),
+          ),
+        ),
 
-                      // Name field — always takes up space, fades in/out for register
-                      AnimatedOpacity(
-                        opacity: _isLogin ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: IgnorePointer(
-                          ignoring: _isLogin,
-                          child: _buildPillField(
-                            controller: _nameController,
-                            hint: 'Name...',
-                          ),
-                        ),
-                      ),
+        const SizedBox(height: 12),
+        _buildPillField(
+          controller: _emailController,
+          hint: 'Email...',
+          keyboardType: TextInputType.emailAddress,
+        ),
 
-                      const SizedBox(height: 12),
+        const SizedBox(height: 12),
+        _buildPillField(
+          controller: _passwordController,
+          hint: 'Password...',
+          obscure: true,
+        ),
 
-                      // Email
-                      _buildPillField(
-                        controller: _emailController,
-                        hint: 'Email...',
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Password
-                      _buildPillField(
-                        controller: _passwordController,
-                        hint: 'Password...',
-                        obscure: true,
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Submit button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kButtonRed,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(40),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const CircularProgressIndicator(
-                              color: Colors.white)
-                              : Text(
-                            _isLogin ? 'LOGIN' : 'Register',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Forgot password — always takes up space, fades in/out for login
-                      const SizedBox(height: 12),
-                      AnimatedOpacity(
-                        opacity: _isLogin ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: IgnorePointer(
-                          ignoring: !_isLogin,
-                          child: GestureDetector(
-                            onTap: _forgotPassword,
-                            child: Text(
-                              'forgot password',
-                              style: TextStyle(
-                                color: kTextColor.withOpacity(0.5),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: screenHeight * 0.08),
-                    ],
+        const SizedBox(height: 32),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _submit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kButtonRed,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(40),
+              ),
+            ),
+            child: _isLoading
+                ? const CircularProgressIndicator(
+                    color: Colors.white)
+                : Text(
+                    _isLogin ? 'LOGIN' : 'Register',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
                   ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+        AnimatedOpacity(
+          opacity: _isLogin ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 200),
+          child: IgnorePointer(
+            ignoring: !_isLogin,
+            child: GestureDetector(
+              onTap: _forgotPassword,
+              child: Text(
+                'forgot password',
+                style: TextStyle(
+                  color: kTextColor.withOpacity(0.5),
+                  fontSize: 13,
                 ),
+              ),
+            ),
+          ),
+        ),
+
+        SizedBox(height: screenHeight * 0.08),
+      ],
+    ),
+  ),
+),
               ),
             ),
           ),

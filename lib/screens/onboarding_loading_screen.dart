@@ -20,32 +20,26 @@ class _OnboardingLoadingScreenState extends State<OnboardingLoadingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // SVG background
           SvgPicture.asset(
             'assets/images/Background.svg',
             fit: BoxFit.cover,
           ),
-
-          // Content
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 2),
-
-              // Bookshelf image
               Image.asset(
                 'assets/images/Filled-shelf.png',
                 width: MediaQuery.of(context).size.width * 0.55,
               ),
-
-              const SizedBox(height: 40),
-
-              // App name
+              SizedBox(height: screenHeight * 0.04),
               const Text(
                 'COLLECTABLE',
                 style: TextStyle(
@@ -55,10 +49,7 @@ class _OnboardingLoadingScreenState extends State<OnboardingLoadingScreen> {
                   letterSpacing: 4,
                 ),
               ),
-
-              const SizedBox(height: 60),
-
-              // Two-tone spinner
+              SizedBox(height: screenHeight * 0.06),
               const SizedBox(
                 width: 80,
                 height: 80,
@@ -70,7 +61,6 @@ class _OnboardingLoadingScreenState extends State<OnboardingLoadingScreen> {
                   strokeWidth: 6,
                 ),
               ),
-
               const Spacer(flex: 3),
             ],
           ),

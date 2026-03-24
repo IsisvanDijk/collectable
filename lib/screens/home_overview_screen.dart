@@ -181,6 +181,9 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth > 600 ? 3 : 2;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: buildAppBar(context, title: 'Hello, $username!'),
@@ -242,9 +245,9 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
                   Expanded(
                     child: GridView.builder(
                       padding: const EdgeInsets.all(16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.78,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        childAspectRatio: 0.65,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
                       ),
@@ -327,12 +330,12 @@ class _BookCard extends StatelessWidget {
       );
     }
 
-    // Local file path → FileImage, remote URL → NetworkImage
     final isLocal = imageUrl.startsWith('/') || imageUrl.startsWith('file://');
 
     return Image(
-      image: isLocal ? FileImage(File(imageUrl.replaceFirst('file://', ''))) as ImageProvider
-                     : NetworkImage(imageUrl),
+      image: isLocal
+          ? FileImage(File(imageUrl.replaceFirst('file://', ''))) as ImageProvider
+          : NetworkImage(imageUrl),
       width: double.infinity,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => Container(
@@ -348,9 +351,7 @@ class _BookCard extends StatelessWidget {
     if (book.signed) {
       badges.add(_buildBadge('Signed'));
     }
-    return Row(
-      children: badges,
-    );
+    return Row(children: badges);
   }
 
   Widget _buildBadge(String label) {
@@ -364,6 +365,7 @@ class _BookCard extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(color: Colors.white, fontSize: 12),
+        textScaler: TextScaler.noScaling,
       ),
     );
   }

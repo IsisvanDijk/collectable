@@ -49,7 +49,6 @@ class Book {
   final DateTime dateAdded;
   final DateTime? dateUpdated;
 
-  // ── Computed ──────────────────────────────────
 
   const Book({
     required this.id,

@@ -97,7 +97,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
@@ -169,8 +170,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('No book found — please fill in manually')),
+          const SnackBar(content: Text('No book found — please fill in manually')),
         );
       }
     }
@@ -192,22 +192,15 @@ class _AddBookScreenState extends State<AddBookScreen> {
         title: _titleController.text,
         author: _authorController.text,
         isbn: _isbnController.text.isEmpty ? null : _isbnController.text,
-        publisher: _publisherController.text.isEmpty
-            ? null
-            : _publisherController.text,
+        publisher: _publisherController.text.isEmpty ? null : _publisherController.text,
         publishYear: _publishYear,
         coverImageUrl: _prefillCoverUrl,
-        edition: _editionController.text.isEmpty ? null : _editionController
-            .text,
-        printRun: _printRunController.text.isEmpty ? null : _printRunController
-            .text,
+        edition: _editionController.text.isEmpty ? null : _editionController.text,
+        printRun: _printRunController.text.isEmpty ? null : _printRunController.text,
         condition: _condition,
         signed: _signed,
-        signedBy: _signedByController.text.isEmpty ? null : _signedByController
-            .text,
-        provenance: _provenanceController.text.isEmpty
-            ? null
-            : _provenanceController.text,
+        signedBy: _signedByController.text.isEmpty ? null : _signedByController.text,
+        provenance: _provenanceController.text.isEmpty ? null : _provenanceController.text,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         photoUrls: _photoUrls,
         dateAdded: DateTime.now(),
@@ -253,77 +246,90 @@ class _AddBookScreenState extends State<AddBookScreen> {
           hintText: hint,
           hintStyle: TextStyle(color: kTextColor.withOpacity(0.8)),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         ),
       ),
     );
   }
 
   Widget _buildToggleBar() {
-    return Container(
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _isManual = false;
-                  _hasScanned = false;
-                });
-                _scannerController.start();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: !_isManual ? kButtonPink : Colors.white,
-                  borderRadius: BorderRadius.horizontal(
-                      left: Radius.circular(40)),
-                ),
-                child: Text(
-                  'Scan ISBN',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: !_isManual ? kButtonRed : kTextColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _isManual = false;
+                _hasScanned = false;
+              });
+              _scannerController.start();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: !_isManual ? kButtonPink : Colors.white,
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(40)),
+              ),
+              child: Text(
+                'Scan ISBN',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: !_isManual ? kButtonRed : kTextColor,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
           ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _isManual = true);
-                _scannerController.stop();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: _isManual ? kButtonPink : Colors.white,
-                  borderRadius: BorderRadius.horizontal(
-                      right: Radius.circular(40)),
-                ),
-                child: Text(
-                  'Manual entry',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _isManual ? kButtonRed : kTextColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+        ),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() => _isManual = true);
+              _scannerController.stop();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: _isManual ? kButtonPink : Colors.white,
+                borderRadius: const BorderRadius.horizontal(right: Radius.circular(40)),
+              ),
+              child: Text(
+                'Manual entry',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _isManual ? kButtonRed : kTextColor,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResponsiveRow(Widget left, Widget right) {
+    final isNarrow = MediaQuery.of(context).size.width < 360;
+    if (isNarrow) {
+      return Column(
+        children: [left, const SizedBox(height: 12), right],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 12),
+        Expanded(child: right),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final scanSize = (MediaQuery.of(context).size.width * 0.6).clamp(200.0, 300.0);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: buildAppBar(context, title: 'Add book'),
@@ -338,93 +344,73 @@ class _AddBookScreenState extends State<AddBookScreen> {
               const SizedBox(height: 24),
 
               if (_isManual) ...[
-                Row(
-                  children: [
-                    Expanded(child: _buildPillField(
-                      controller: _titleController,
-                      hint: 'Title',
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
-                    )),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildPillField(
-                      controller: _authorController,
-                      hint: 'Author',
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
-                    )),
-                  ],
+                _buildResponsiveRow(
+                  _buildPillField(
+                    controller: _titleController,
+                    hint: 'Title',
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                  ),
+                  _buildPillField(
+                    controller: _authorController,
+                    hint: 'Author',
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildPillField(
-                      controller: _isbnController,
-                      hint: 'ISBN?',
-                      keyboardType: TextInputType.number,
-                    )),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildPillField(
-                      controller: _printRunController,
-                      hint: 'Print',
-                    )),
-                  ],
+                _buildResponsiveRow(
+                  _buildPillField(
+                    controller: _isbnController,
+                    hint: 'ISBN?',
+                    keyboardType: TextInputType.number,
+                  ),
+                  _buildPillField(
+                    controller: _printRunController,
+                    hint: 'Print',
+                  ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildPillField(
-                      controller: _editionController,
-                      hint: 'Edition',
-                    )),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(40),
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<BookCondition>(
-                            value: _condition,
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(color: kTextColor),
-                            hint: const Text('Condition',
-                                style: TextStyle(color: kTextColor)),
-                            items: BookCondition.values
-                                .map((c) =>
-                                DropdownMenuItem(
-                                  value: c,
-                                  child: Text(c.name),
-                                ))
-                                .toList(),
-                            onChanged: (value) =>
-                                setState(() => _condition = value!),
-                          ),
-                        ),
+                _buildResponsiveRow(
+                  _buildPillField(
+                    controller: _editionController,
+                    hint: 'Edition',
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(40),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<BookCondition>(
+                        value: _condition,
+                        dropdownColor: Colors.white,
+                        style: const TextStyle(color: kTextColor),
+                        hint: const Text('Condition', style: TextStyle(color: kTextColor)),
+                        items: BookCondition.values
+                            .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
+                            .toList(),
+                        onChanged: (value) => setState(() => _condition = value!),
                       ),
                     ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildPillField(
-                      controller: _publisherController,
-                      hint: 'Publisher',
-                    )),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildPillField(
-                      controller: _publishYearController,
-                      hint: 'Year published',
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        setState(() {
-                          _publishYear = int.tryParse(value);
-                        });
-                      },
-                    )),
-                  ],
+                _buildResponsiveRow(
+                  _buildPillField(
+                    controller: _publisherController,
+                    hint: 'Publisher',
+                  ),
+                  _buildPillField(
+                    controller: _publishYearController,
+                    hint: 'Year published',
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      setState(() {
+                        _publishYear = int.tryParse(value);
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Container(
@@ -433,13 +419,11 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     borderRadius: BorderRadius.circular(40),
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Signed?',
-                          style: TextStyle(color: kTextColor, fontSize: 16)),
+                      const Text('Signed?', style: TextStyle(color: kTextColor, fontSize: 16)),
                       Switch(
                         value: _signed,
                         onChanged: (value) => setState(() => _signed = value),
@@ -473,7 +457,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
-                      // Bestaande foto's
                       ..._photoUrls.asMap().entries.map((entry) {
                         final index = entry.key;
                         final path = entry.value;
@@ -491,9 +474,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
                                 ),
                               ),
                             ),
-                            // Verwijder-knop
                             Positioned(
-                              top: 4, right: 12,
+                              top: 4,
+                              right: 12,
                               child: GestureDetector(
                                 onTap: () => setState(() => _photoUrls.removeAt(index)),
                                 child: Container(
@@ -509,12 +492,11 @@ class _AddBookScreenState extends State<AddBookScreen> {
                           ],
                         );
                       }),
-
-                      // Foto toevoegen knop
                       GestureDetector(
                         onTap: _pickImage,
                         child: Container(
-                          width: 100, height: 100,
+                          width: 100,
+                          height: 100,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(12),
@@ -523,12 +505,12 @@ class _AddBookScreenState extends State<AddBookScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add_a_photo_outlined,
-                                  color: kTextColor.withOpacity(0.5)),
+                              Icon(Icons.add_a_photo_outlined, color: kTextColor.withOpacity(0.5)),
                               const SizedBox(height: 4),
-                              Text('Add photo',
-                                  style: TextStyle(
-                                      color: kTextColor.withOpacity(0.5), fontSize: 12)),
+                              Text(
+                                'Add photo',
+                                style: TextStyle(color: kTextColor.withOpacity(0.5), fontSize: 12),
+                              ),
                             ],
                           ),
                         ),
@@ -551,61 +533,60 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Save to collection',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
+                        : const Text(
+                      'Save to collection',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
-              ] else
-                ...[
-                  const SizedBox(height: 40),
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: SizedBox(
-                        width: 260,
-                        height: 260,
-                        child: _isLoading
-                            ? Container(
-                          color: Colors.white.withOpacity(0.3),
-                          child: const Center(
-                              child: CircularProgressIndicator()),
-                        )
-                            : MobileScanner(
-                          controller: _scannerController,
-                          onDetect: _onDetect,
-                        ),
+              ] else ...[
+                const SizedBox(height: 40),
+                Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: SizedBox(
+                      width: scanSize,
+                      height: scanSize,
+                      child: _isLoading
+                          ? Container(
+                        color: Colors.white.withOpacity(0.3),
+                        child: const Center(child: CircularProgressIndicator()),
+                      )
+                          : MobileScanner(
+                        controller: _scannerController,
+                        onDetect: _onDetect,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      'Center the ISBN in the frame',
-                      style: TextStyle(
-                          color: kTextColor.withOpacity(0.5), fontSize: 14),
-                    ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'Center the ISBN in the frame',
+                    style: TextStyle(color: kTextColor.withOpacity(0.5), fontSize: 14),
                   ),
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kButtonRed,
-                        disabledBackgroundColor: kButtonRed.withOpacity(0.4),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(40),
-                        ),
+                ),
+                const SizedBox(height: 40),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kButtonRed,
+                      disabledBackgroundColor: kButtonRed.withOpacity(0.4),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(40),
                       ),
-                      child: const Text('Next',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600)),
+                    ),
+                    child: const Text(
+                      'Next',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
-                ],
+                ),
+              ],
             ],
           ),
         ),
@@ -613,4 +594,3 @@ class _AddBookScreenState extends State<AddBookScreen> {
     );
   }
 }
-

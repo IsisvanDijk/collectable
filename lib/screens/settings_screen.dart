@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import '../main.dart';
+import '../widgets/narrow_layout.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -137,10 +138,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: buildAppBar(context, title: 'Settings', showSettings: false),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-        children: [
-          // Username
+      body: NarrowLayout(
+  child: ListView(
+    padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+    children: [
           Text(
             username,
             style: const TextStyle(
@@ -150,8 +151,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Profile picture
           Center(
             child: GestureDetector(
               onTap: _pickProfileImage,
@@ -171,10 +170,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(color: kTextColor, thickness: 0.5),
           const SizedBox(height: 20),
 
-          // Buttons
           _buildPillButton('Edit profile picture', onTap: _pickProfileImage),
 
-          // Edit username inline
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 12),
@@ -197,7 +194,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          // Update password inline
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 12),
@@ -221,7 +217,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          // Update email inline
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 12),
@@ -247,7 +242,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 12),
 
-          // Save button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -272,7 +266,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 24),
 
-          // Log out
           GestureDetector(
             onTap: () async {
               await FirebaseAuth.instance.signOut();
@@ -290,6 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+),
     );
   }
 }
