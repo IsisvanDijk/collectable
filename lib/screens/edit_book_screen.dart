@@ -172,7 +172,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
     FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
     try {
-      print('=== SAVE START');
       final updated = widget.book.copyWith(
         title: _titleController.text,
         author: _authorController.text,
@@ -192,15 +191,10 @@ class _EditBookScreenState extends State<EditBookScreen> {
         photoUrls: _photoUrls,
         coverPhotoIndex: _coverIndex,
       );
-      print('=== BOOK BUILT: ${updated.id}');
-      print('=== CALLING UPDATE');
       await BookRepository().update(updated);
-      print('=== UPDATE COMPLETE');
       if (!mounted) return;
       context.go('/book/${widget.book.id}');
-    } catch (e, stack) {
-      print('=== SAVE ERROR: $e');
-      print(stack);
+    } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -262,7 +256,7 @@ class _EditBookScreenState extends State<EditBookScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: buildAppBar(context, title: 'Edit', showSettings: false),
+      appBar: buildAppBar(context, title: 'Edit book', showSettings: false, showBack: false),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Form(

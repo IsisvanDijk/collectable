@@ -62,6 +62,62 @@ class _BookDetailViewState extends State<_BookDetailView> {
     super.dispose();
   }
 
+  Widget _buildResponsiveRow(Widget left, Widget right) {
+    final isNarrow = MediaQuery.of(context).size.width < 360;
+    if (isNarrow) {
+      return Column(
+        children: [left, const SizedBox(height: 12), right],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 12),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  BoxDecoration get _pillDecoration => BoxDecoration(
+    color: Colors.white.withOpacity(0.3),
+    borderRadius: BorderRadius.circular(40),
+    border: Border.all(color: Colors.white, width: 1.5),
+  );
+
+  Widget _buildPillDisplay({required String label, required String? value}) {
+    final displayValue = (value == null || value.isEmpty) ? '—' : value;
+    return Container(
+      decoration: _pillDecoration,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: kTextColor.withOpacity(0.5),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              displayValue,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: kTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
@@ -70,27 +126,30 @@ class _BookDetailViewState extends State<_BookDetailView> {
     final coverUrl = book.coverImageUrl;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: buildAppBar(context, title: 'Details', showSettings: false),
+        backgroundColor: Colors.transparent,
+      appBar: buildAppBar(context, title: 'Details', showSettings: false, showBack: true),
+
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                book.title,
-                style: const TextStyle(
-                  color: kTextColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  book.title,
+                  style: const TextStyle(
+                    color: kTextColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
+              const SizedBox(width: 12),
               GestureDetector(
                 onTap: () => context.push('/book/${book.id}/edit', extra: book),
                 child: Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(40),
@@ -98,15 +157,13 @@ class _BookDetailViewState extends State<_BookDetailView> {
                   ),
                   child: const Text(
                     'Edit',
-                    style: TextStyle(
-                        color: kTextColor, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: kTextColor, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-
           // ── Large cover image ─────────────────────────────────────────
           if (hasPhotos) ...[
             ClipRRect(
@@ -124,8 +181,6 @@ class _BookDetailViewState extends State<_BookDetailView> {
               ),
             ),
             const SizedBox(height: 12),
-
-            // ── Dot indicators ────────────────────────────────────────
             if (photos.length > 1)
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -182,70 +237,40 @@ class _BookDetailViewState extends State<_BookDetailView> {
           ),
           const SizedBox(height: 20),
 
-          // ── Labeled fields ────────────────────────────────────────────
-          if (book.edition != null) ...[
-            _LabeledField(label: 'Edition', value: book.edition!),
-            const SizedBox(height: 10),
-          ],
-          if (book.printRun != null) ...[
-            _LabeledField(label: 'Print', value: book.printRun!),
-            const SizedBox(height: 10),
-          ],
-          _LabeledField(label: 'Condition', value: book.condition.label),
-          const SizedBox(height: 10),
-          if (book.publisher != null) ...[
-            _LabeledField(label: 'Publisher', value: book.publisher!),
-            const SizedBox(height: 10),
-          ],
-          if (book.publishYear != null) ...[
-            _LabeledField(
-                label: 'Year', value: book.publishYear.toString()),
-            const SizedBox(height: 10),
-          ],
-          if (book.isbn != null) ...[
-            _LabeledField(label: 'ISBN', value: book.isbn!),
-            const SizedBox(height: 10),
-          ],
-          _LabeledField(
-            label: 'Signed',
-            value: book.signed
-                ? (book.signedBy != null ? 'Yes — by ${book.signedBy}' : 'Yes')
-                : 'No',
+          // ── Edition / Print ───────────────────────────────────────────
+          _buildResponsiveRow(
+            _buildPillDisplay(label: 'Edition', value: book.edition),
+            _buildPillDisplay(label: 'Print', value: book.printRun),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+
+          // ── Publisher / Year ──────────────────────────────────────────
+          _buildResponsiveRow(
+            _buildPillDisplay(label: 'Publisher', value: book.publisher),
+            _buildPillDisplay(label: 'Year', value: book.publishYear?.toString()),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Condition / Signed ────────────────────────────────────────
+          _buildResponsiveRow(
+            _buildPillDisplay(label: 'Condition', value: book.condition.label),
+            _buildPillDisplay(label: 'Signed', value: book.signed ? 'Yes' : 'No'),
+          ),
+          const SizedBox(height: 12),
+
+          // ── ISBN (full width) ─────────────────────────────────────────
+          _buildPillDisplay(label: 'ISBN', value: book.isbn),
+          const SizedBox(height: 12),
 
           // ── Provenance ────────────────────────────────────────────────
           if (book.provenance != null && book.provenance!.isNotEmpty) ...[
-            _SectionLabel(label: 'Provenance'),
-            const SizedBox(height: 6),
-            _InfoBox(text: book.provenance!),
-            const SizedBox(height: 16),
+            _buildPillDisplay(label: 'Provenance', value: book.provenance),
+            const SizedBox(height: 12),
           ],
 
           // ── Notes ─────────────────────────────────────────────────────
-          if (book.notes != null && book.notes!.isNotEmpty) ...[
-            _SectionLabel(label: 'Notes'),
-            const SizedBox(height: 6),
-            _InfoBox(text: book.notes!),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Dates ─────────────────────────────────────────────────────
-          Text(
-            'Added ${_formatDate(book.dateAdded)}',
-            style: TextStyle(
-              color: kTextColor.withOpacity(0.4),
-              fontSize: 12,
-            ),
-          ),
-          if (book.dateUpdated != null)
-            Text(
-              'Last edited ${_formatDate(book.dateUpdated!)}',
-              style: TextStyle(
-                color: kTextColor.withOpacity(0.4),
-                fontSize: 12,
-              ),
-            ),
+          if (book.notes != null && book.notes!.isNotEmpty)
+            _buildPillDisplay(label: 'Notes', value: book.notes),
         ],
       ),
     );
@@ -284,96 +309,6 @@ class _BookDetailViewState extends State<_BookDetailView> {
           size: 64,
           color: kTextColor.withOpacity(0.25),
         ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-}
-
-// ── Reusable widgets ──────────────────────────────────────────────────────────
-
-class _LabeledField extends StatelessWidget {
-  final String label;
-  final String value;
-  const _LabeledField({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: Colors.white, width: 1.5),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 90,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: kTextColor.withOpacity(0.5),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: kTextColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: TextStyle(
-        color: kTextColor.withOpacity(0.5),
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.5,
-      ),
-    );
-  }
-}
-
-class _InfoBox extends StatelessWidget {
-  final String text;
-  const _InfoBox({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white, width: 1.5),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-            color: kTextColor, fontSize: 14, height: 1.5),
       ),
     );
   }

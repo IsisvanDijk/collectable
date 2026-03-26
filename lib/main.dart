@@ -169,10 +169,18 @@ const kTextColor = Color(0xFF2C3E50);
 const kButtonRed = Color(0xFF521121);
 
 PreferredSizeWidget buildAppBar(BuildContext context,
-    {required String title, bool showSettings = true}) {
+    {required String title, bool showSettings = true, bool showBack = false, List<Widget>? actions}) {
   return AppBar(
     backgroundColor: Colors.transparent,
     elevation: 0,
+    centerTitle: false,
+    leading: showBack
+        ? GestureDetector(
+      onTap: () => context.pop(),
+      child: const Icon(Icons.arrow_back, color: kTextColor),
+    )
+        : null,
+    automaticallyImplyLeading: false,
     title: Text(
       title,
       style: const TextStyle(
@@ -181,8 +189,8 @@ PreferredSizeWidget buildAppBar(BuildContext context,
         fontWeight: FontWeight.bold,
       ),
     ),
-    titleSpacing: 20,
-    actions: showSettings
+    titleSpacing: showBack ? 0 : 20,
+    actions: actions ?? (showSettings
         ? [
       IconButton(
         icon: const Icon(Icons.settings_outlined, color: kTextColor),
@@ -190,7 +198,7 @@ PreferredSizeWidget buildAppBar(BuildContext context,
       ),
       const SizedBox(width: 8),
     ]
-        : null,
+        : null),
   );
 }
 
