@@ -1,3 +1,6 @@
+import 'package:collectable/screens/edit_book_screen.dart';
+
+import 'models/book.dart';
 import 'screens/onboarding_loading_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_overview_screen.dart';
@@ -79,11 +82,11 @@ final _router = GoRouter(
       ),
     ),
     GoRoute(
-      path: '/book/:id',
+      path: '/book/:id/edit',
       pageBuilder: (context, state) => noTransitionPage(
         context: context,
         state: state,
-        child: BookDetailScreen(bookId: state.pathParameters['id']!),
+        child: EditBookScreen(book: state.extra as Book),
       ),
     ),
     StatefulShellRoute.indexedStack(
@@ -97,6 +100,17 @@ final _router = GoRouter(
             pageBuilder: (context, state) => noTransitionPage(
               context: context, state: state, child: const HomeOverviewScreen(),
             ),
+            routes: [
+              // Sub-route — stays inside the shell so the nav bar persists
+              GoRoute(
+                path: 'book/:id',   // Note: no leading slash
+                pageBuilder: (context, state) => noTransitionPage(
+                  context: context,
+                  state: state,
+                  child: BookDetailScreen(bookId: state.pathParameters['id']!),
+                ),
+              ),
+            ],
           ),
         ]),
         StatefulShellBranch(routes: [

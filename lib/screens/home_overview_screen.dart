@@ -315,12 +315,9 @@ class _BookCard extends StatelessWidget {
   }
 
   Widget _buildCoverImage() {
-    String? imageUrl;
-    if (book.photoUrls.isNotEmpty) {
-      imageUrl = book.photoUrls.first;
-    } else if (book.coverImageUrl != null) {
-      imageUrl = book.coverImageUrl;
-    }
+    final imageUrl = book.photoUrls.isNotEmpty
+        ? book.photoUrls[book.coverPhotoIndex.clamp(0, book.photoUrls.length - 1)]
+        : book.coverImageUrl;
 
     if (imageUrl == null) {
       return Container(

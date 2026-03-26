@@ -61,15 +61,15 @@ class BookRepository {
       photoUrls: book.photoUrls,
       dateAdded: book.dateAdded,
       dateUpdated: book.dateUpdated,
+      coverPhotoIndex: 0,
     );
 
-    // Schrijf zonder te wachten op server-bevestiging
     _collection.doc(book.id).set(bookWithUser.toMap());
   }
 
   /// Update an existing book (partial update via copyWith is handled by caller).
   Future<void> update(Book book) async {
-    await _collection.doc(book.id).update({
+    _collection.doc(book.id).update({
       ...book.toMap(),
       'dateUpdated': FieldValue.serverTimestamp(),
     });

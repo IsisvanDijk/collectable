@@ -44,6 +44,7 @@ class Book {
   // ── Free-text & media ────────────────────────────────────────────────────
   final String? notes;
   final List<String> photoUrls; // Firebase Storage URLs
+     final int coverPhotoIndex; // geeft aan welke foto de 'cover' is
 
   // ── Metadata ─────────────────────────────────────────────────────────────
   final DateTime dateAdded;
@@ -67,6 +68,7 @@ class Book {
     this.provenance,
     this.notes,
     required this.photoUrls,
+    required this.coverPhotoIndex,
     required this.dateAdded,
     this.dateUpdated,
   });
@@ -90,6 +92,7 @@ class Book {
       'provenance': provenance,
       'notes': notes,
       'photoUrls': photoUrls,
+      'coverPhotoIndex': coverPhotoIndex,
       'dateAdded': Timestamp.fromDate(dateAdded),
       'dateUpdated':
       dateUpdated != null ? Timestamp.fromDate(dateUpdated!) : null,
@@ -117,6 +120,7 @@ class Book {
       provenance: map['provenance'] as String?,
       notes: map['notes'] as String?,
       photoUrls: List<String>.from(map['photoUrls'] as List? ?? []),
+      coverPhotoIndex: map['coverPhotoIndex'] as int? ?? 0,
       dateAdded: (map['dateAdded'] as Timestamp?)?.toDate() ?? DateTime.now(),
       dateUpdated: (map['dateUpdated'] as Timestamp?)?.toDate(),
     );
@@ -141,6 +145,7 @@ class Book {
     String? provenance,
     String? notes,
     List<String>? photoUrls,
+       int? coverPhotoIndex,
   }) {
     return Book(
       id: id,
@@ -159,6 +164,7 @@ class Book {
       provenance: provenance ?? this.provenance,
       notes: notes ?? this.notes,
       photoUrls: photoUrls ?? this.photoUrls,
+          coverPhotoIndex: coverPhotoIndex ?? this.coverPhotoIndex,
       dateAdded: dateAdded,
       dateUpdated: DateTime.now(),
     );

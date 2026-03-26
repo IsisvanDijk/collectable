@@ -195,6 +195,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
         publisher: _publisherController.text.isEmpty ? null : _publisherController.text,
         publishYear: _publishYear,
         coverImageUrl: _prefillCoverUrl,
+        coverPhotoIndex: 0,
         edition: _editionController.text.isEmpty ? null : _editionController.text,
         printRun: _printRunController.text.isEmpty ? null : _printRunController.text,
         condition: _condition,
@@ -205,12 +206,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
         photoUrls: _photoUrls,
         dateAdded: DateTime.now(),
       );
-      print('=== BOOK CREATED ===');
-      await BookRepository().add(book);
-      print('=== BOOK SAVED TO FIRESTORE ===');
+      BookRepository().add(book);
       if (!mounted) return;
       _resetForm();
-      StatefulNavigationShell.maybeOf(context)?.goBranch(0);
+      if (mounted) context.push('/book/${book.id}');
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
