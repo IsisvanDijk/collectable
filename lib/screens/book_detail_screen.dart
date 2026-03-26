@@ -164,7 +164,6 @@ class _BookDetailViewState extends State<_BookDetailView> {
             ],
           ),
           const SizedBox(height: 16),
-          // ── Large cover image ─────────────────────────────────────────
           if (hasPhotos) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
@@ -217,7 +216,7 @@ class _BookDetailViewState extends State<_BookDetailView> {
                 height: 320,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                errorBuilder: (_, _, _) => _imagePlaceholder(),
               ),
             ),
           ] else ...[
@@ -226,7 +225,6 @@ class _BookDetailViewState extends State<_BookDetailView> {
 
           const SizedBox(height: 20),
 
-          // ── Author ────────────────────────────────────────────────────
           Text(
             book.author,
             style: const TextStyle(
@@ -237,38 +235,32 @@ class _BookDetailViewState extends State<_BookDetailView> {
           ),
           const SizedBox(height: 20),
 
-          // ── Edition / Print ───────────────────────────────────────────
           _buildResponsiveRow(
             _buildPillDisplay(label: 'Edition', value: book.edition),
             _buildPillDisplay(label: 'Print', value: book.printRun),
           ),
           const SizedBox(height: 12),
 
-          // ── Publisher / Year ──────────────────────────────────────────
           _buildResponsiveRow(
             _buildPillDisplay(label: 'Publisher', value: book.publisher),
             _buildPillDisplay(label: 'Year', value: book.publishYear?.toString()),
           ),
           const SizedBox(height: 12),
 
-          // ── Condition / Signed ────────────────────────────────────────
           _buildResponsiveRow(
             _buildPillDisplay(label: 'Condition', value: book.condition.label),
             _buildPillDisplay(label: 'Signed', value: book.signed ? 'Yes' : 'No'),
           ),
           const SizedBox(height: 12),
 
-          // ── ISBN (full width) ─────────────────────────────────────────
           _buildPillDisplay(label: 'ISBN', value: book.isbn),
           const SizedBox(height: 12),
 
-          // ── Provenance ────────────────────────────────────────────────
           if (book.provenance != null && book.provenance!.isNotEmpty) ...[
             _buildPillDisplay(label: 'Provenance', value: book.provenance),
             const SizedBox(height: 12),
           ],
 
-          // ── Notes ─────────────────────────────────────────────────────
           if (book.notes != null && book.notes!.isNotEmpty)
             _buildPillDisplay(label: 'Notes', value: book.notes),
         ],
@@ -283,7 +275,7 @@ class _BookDetailViewState extends State<_BookDetailView> {
         width: double.infinity,
         height: 320,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _imagePlaceholder(),
+        errorBuilder: (_, _, _) => _imagePlaceholder(),
       );
     }
     return Image.network(
@@ -291,7 +283,7 @@ class _BookDetailViewState extends State<_BookDetailView> {
       width: double.infinity,
       height: 320,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _imagePlaceholder(),
+      errorBuilder: (_, _, _) => _imagePlaceholder(),
     );
   }
 

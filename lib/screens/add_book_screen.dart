@@ -21,7 +21,7 @@ class AddBookScreen extends StatefulWidget {
 }
 
 class _AddBookScreenState extends State<AddBookScreen> {
-  final MobileScannerController _scannerController = MobileScannerController();
+  MobileScannerController _scannerController = MobileScannerController();
   bool _hasScanned = false;
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
@@ -151,7 +151,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
     if (value.length != 13 && value.length != 10) return;
 
     _hasScanned = true;
-    _scannerController.stop();
+    try { _scannerController.stop(); } catch (_) {}
     setState(() => _isLoading = true);
 
     final result = await BookLookupService().lookup(value);
@@ -257,11 +257,12 @@ class _AddBookScreenState extends State<AddBookScreen> {
         Expanded(
           child: GestureDetector(
             onTap: () {
+              _scannerController.dispose();
               setState(() {
+                _scannerController = MobileScannerController();
                 _isManual = false;
                 _hasScanned = false;
               });
-              _scannerController.start();
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -284,8 +285,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
         Expanded(
           child: GestureDetector(
             onTap: () {
+              try { _scannerController.stop(); } catch (_) {}
               setState(() => _isManual = true);
-              _scannerController.stop();
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),

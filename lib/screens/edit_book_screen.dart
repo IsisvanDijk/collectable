@@ -296,7 +296,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Title + Author ────────────────────────────────────────
               _buildResponsiveRow(
                 _buildPillField(
                   controller: _titleController,
@@ -311,7 +310,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
               ),
               const SizedBox(height: 12),
 
-              // ── ISBN + Print ──────────────────────────────────────────
               _buildResponsiveRow(
                 _buildPillField(
                   controller: _isbnController,
@@ -325,7 +323,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
               ),
               const SizedBox(height: 12),
 
-              // ── Edition + Condition ───────────────────────────────────
               _buildResponsiveRow(
                 _buildPillField(
                   controller: _editionController,
@@ -357,7 +354,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
               ),
               const SizedBox(height: 12),
 
-              // ── Publisher + Year ──────────────────────────────────────
               _buildResponsiveRow(
                 _buildPillField(
                   controller: _publisherController,
@@ -373,7 +369,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
               ),
               const SizedBox(height: 12),
 
-              // ── Signed toggle ─────────────────────────────────────────
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.3),
@@ -397,7 +392,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
                 ),
               ),
 
-              // ── Signed by ─────────────────────────────────────────────
               if (_signed) ...[
                 const SizedBox(height: 12),
                 _buildPillField(
@@ -407,7 +401,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
               ],
               const SizedBox(height: 12),
 
-              // ── Provenance ────────────────────────────────────────────
               _buildPillField(
                 controller: _provenanceController,
                 hint: 'Provenance / where acquired',
@@ -415,7 +408,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
               ),
               const SizedBox(height: 12),
 
-              // ── Notes ─────────────────────────────────────────────────
               _buildPillField(
                 controller: _notesController,
                 hint: 'Notes',
@@ -423,7 +415,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
               ),
               const SizedBox(height: 12),
 
-              // ── Photo strip ───────────────────────────────────────────
               SizedBox(
                 height: 116,
                 child: ListView(
@@ -501,7 +492,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
                         ),
                       );
                     }),
-                    // Add photo button
                     GestureDetector(
                       onTap: _pickImage,
                       child: Container(
@@ -531,7 +521,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ── Save button ───────────────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -556,7 +545,6 @@ class _EditBookScreenState extends State<EditBookScreen> {
 
               const SizedBox(height: 32),
 
-              // ── Delete ────────────────────────────────────────────────
               GestureDetector(
                 onTap: () => _deleteBook(context),
                 child: const Text(
