@@ -77,7 +77,7 @@ class BookRepository {
 
   /// Delete a book by ID.
   Future<void> delete(String bookId) async {
-    await _collection.doc(bookId).delete();
+    _collection.doc(bookId).delete();
   }
 
   // ── Helpers for Export ────────────────────────────────────────────────────

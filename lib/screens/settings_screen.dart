@@ -137,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: buildAppBar(context, title: 'Settings', showSettings: false),
+      appBar: buildAppBar(context, title: 'Settings', showSettings: false, showBack: true),
       body: NarrowLayout(
   child: ListView(
     padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),

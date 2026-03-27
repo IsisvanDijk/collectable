@@ -548,7 +548,7 @@ class _EditBookScreenState extends State<EditBookScreen> {
               GestureDetector(
                 onTap: () => _deleteBook(context),
                 child: const Text(
-                  'Remove from collection',
+                  'Remove book from collection',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.red,
