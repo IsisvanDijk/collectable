@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../repositories/book_repository.dart';
+import '../repositories/user_repository.dart';
 import '../models/book.dart';
 import '../main.dart';
 
@@ -17,6 +18,7 @@ class HomeOverviewScreen extends StatefulWidget {
 
 class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
   final _bookRepo = BookRepository();
+  final _userRepo = UserRepository();
   final _searchController = TextEditingController();
   String _searchQuery = '';
   BookFilter _activeFilter = BookFilter.all;
@@ -30,11 +32,6 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
         _searchQuery = _searchController.text;
       });
     });
-  }
-
-  String get username {
-    final name = FirebaseAuth.instance.currentUser?.displayName;
-    return (name != null && name.isNotEmpty) ? name : 'there';
   }
 
   @override
@@ -184,85 +181,94 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = screenWidth > 600 ? 3 : 2;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: buildAppBar(context, title: 'Hello, $username!'),
-      body: StreamBuilder<List<Book>>(
-        stream: _bookRepo.getAll(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          final books = snapshot.data ?? [];
-          final filteredBooks = _applyFilters(books);
-          if (books.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    'assets/images/Empty-shelf.png',
-                    width: 220,
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Your collection is empty',
-                    style: TextStyle(
-                      color: kTextColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Start by adding your first book!',
-                    style: TextStyle(
-                      color: kTextColor,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            return Column(
-              children: [
-                _buildSearchBar(),
-                _buildFilterChips(),
-                if (filteredBooks.isEmpty)
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'No books match your search',
-                        style: TextStyle(color: kTextColor, fontSize: 16),
+    return StreamBuilder(
+      stream: _userRepo.watchUser(),
+      builder: (context, userSnapshot) {
+        // Use firstName from Firestore, fall back to 'there'
+        final firstName = userSnapshot.data?.firstName ?? '';
+        final displayName = firstName.isNotEmpty ? firstName : 'there';
+
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: buildAppBar(context, title: 'Hello, $displayName!'),
+          body: StreamBuilder<List<Book>>(
+            stream: _bookRepo.getAll(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              final books = snapshot.data ?? [];
+              final filteredBooks = _applyFilters(books);
+              if (books.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/Empty-shelf.png',
+                        width: 220,
                       ),
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        childAspectRatio: 0.65,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Your collection is empty',
+                        style: TextStyle(
+                          color: kTextColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      itemCount: filteredBooks.length,
-                      itemBuilder: (context, index) {
-                        final book = filteredBooks[index];
-                        return _BookCard(book: book);
-                      },
-                    ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Start by adding your first book!',
+                        style: TextStyle(
+                          color: kTextColor,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-              ],
-            );
-          }
-        },
-      ),
+                );
+              } else {
+                return Column(
+                  children: [
+                    _buildSearchBar(),
+                    _buildFilterChips(),
+                    if (filteredBooks.isEmpty)
+                      const Expanded(
+                        child: Center(
+                          child: Text(
+                            'No books match your search',
+                            style: TextStyle(color: kTextColor, fontSize: 16),
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            childAspectRatio: 0.65,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemCount: filteredBooks.length,
+                          itemBuilder: (context, index) {
+                            final book = filteredBooks[index];
+                            return _BookCard(book: book);
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -344,7 +350,7 @@ class _BookCard extends StatelessWidget {
   }
 
   Widget _buildBadges() {
-    List<Widget> badges = [];
+    final List<Widget> badges = [];
     if (book.signed) {
       badges.add(_buildBadge('Signed'));
     }

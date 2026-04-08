@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import '../main.dart';
 import '../widgets/narrow_layout.dart';
+import '../repositories/user_repository.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,20 +19,36 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _usernameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailController = TextEditingController();
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
   String? _profileImagePath;
+  final UserRepository _userRepo = UserRepository();
 
   @override
   void initState() {
     super.initState();
     _loadProfileImage();
     final user = FirebaseAuth.instance.currentUser;
-    _usernameController.text = user?.displayName ?? '';
     _emailController.text = user?.email ?? '';
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final appUser = await _userRepo.getUser();
+      if (appUser != null && mounted) {
+        setState(() {
+          _firstNameController.text = appUser.firstName ?? '';
+          _lastNameController.text = appUser.lastName ?? '';
+        });
+      }
+    } catch (_) {
+      // User profile might not exist yet
+    }
   }
 
   Future<void> _loadProfileImage() async {
@@ -43,7 +60,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _passwordController.dispose();
     _emailController.dispose();
     super.dispose();
@@ -78,9 +96,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _isLoading = true);
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (_usernameController.text.isNotEmpty) {
-        await user?.updateDisplayName(_usernameController.text);
-      }
+      
+      // Update first and last name in user repository
+      await _userRepo.updateName(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+      );
+
       if (_emailController.text.isNotEmpty &&
           _emailController.text != user?.email) {
         await user?.verifyBeforeUpdateEmail(_emailController.text);
@@ -132,8 +154,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final username = user?.displayName ?? 'Username';
+    final fullName = _firstNameController.text.isEmpty && _lastNameController.text.isEmpty
+        ? 'User'
+        : '${_firstNameController.text} ${_lastNameController.text}'.trim();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -141,9 +164,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: NarrowLayout(
   child: ListView(
     padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-    children: [
+        children: [
           Text(
-            username,
+            fullName,
             style: const TextStyle(
               color: kTextColor,
               fontSize: 18,
@@ -170,29 +193,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(color: kTextColor, thickness: 0.5),
           const SizedBox(height: 20),
 
-          _buildPillButton('Edit profile picture', onTap: _pickProfileImage),
+           _buildPillButton('Edit profile picture', onTap: _pickProfileImage),
 
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: Colors.white, width: 1.5),
-            ),
-            child: TextFormField(
-              controller: _usernameController,
-              style: const TextStyle(color: kTextColor),
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                hintText: 'Edit username',
-                hintStyle: TextStyle(color: kTextColor.withOpacity(0.5)),
-                border: InputBorder.none,
-                contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(40),
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: TextFormField(
+                controller: _firstNameController,
+                style: const TextStyle(color: kTextColor),
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  hintText: 'Edit first name',
+                  hintStyle: TextStyle(color: kTextColor.withOpacity(0.5)),
+                  border: InputBorder.none,
+                  contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                ),
               ),
             ),
-          ),
+
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(40),
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: TextFormField(
+                controller: _lastNameController,
+                style: const TextStyle(color: kTextColor),
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  hintText: 'Edit last name',
+                  hintStyle: TextStyle(color: kTextColor.withOpacity(0.5)),
+                  border: InputBorder.none,
+                  contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                ),
+              ),
+            ),
 
           Container(
             width: double.infinity,

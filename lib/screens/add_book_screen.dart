@@ -214,7 +214,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save book: $e')),
+          SnackBar(
+            content: Text('Failed to save book: $e'),
+            backgroundColor: Color(0xFFf44336),
+          ),
         );
       }
     }

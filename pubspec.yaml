@@ -47,6 +47,8 @@ dependencies:
   path_provider: ^2.1.0
   path: ^1.9.0
   shared_preferences: ^2.2.0
+  pdf: ^3.11.0
+  printing: ^5.13.0
 
 dev_dependencies:
   flutter_test:
@@ -104,6 +106,7 @@ flutter:
     - assets/images/Background.svg
     - assets/images/Empty-shelf.png
     - assets/images/Filled-shelf.png
+    - fonts/Afacad-Regular.ttf
   fonts:
     - family: Afacad
       fonts:

@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../main.dart';
 import 'add_book_screen.dart';
 import '../widgets/narrow_layout.dart';
+import '../repositories/user_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,7 +17,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   bool _isLogin = true;
   bool _isLoading = false;
 
@@ -24,7 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     super.dispose();
   }
 
@@ -37,14 +40,19 @@ class _LoginScreenState extends State<LoginScreen> {
           password: _passwordController.text,
         );
       } else {
-        final credential = await FirebaseAuth.instance
+        await FirebaseAuth.instance
             .createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-        if (_nameController.text.isNotEmpty) {
-          await credential.user?.updateDisplayName(_nameController.text.trim());
-        }
+        
+        // Save user profile with first and last names
+        final userRepo = UserRepository();
+        await userRepo.saveUser(
+          email: _emailController.text.trim(),
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+        );
       }
       if (mounted) context.go('/');
     } on FirebaseAuthException catch (e) {
@@ -215,14 +223,22 @@ class _LoginScreenState extends State<LoginScreen> {
           duration: const Duration(milliseconds: 200),
           child: IgnorePointer(
             ignoring: _isLogin,
-            child: _buildPillField(
-              controller: _nameController,
-              hint: 'Name...',
+            child: Column(
+              children: [
+                _buildPillField(
+                  controller: _firstNameController,
+                  hint: 'First name...',
+                ),
+                const SizedBox(height: 12),
+                _buildPillField(
+                  controller: _lastNameController,
+                  hint: 'Last name...',
+                ),
+                const SizedBox(height: 12),
+              ],
             ),
           ),
         ),
-
-        const SizedBox(height: 12),
         _buildPillField(
           controller: _emailController,
           hint: 'Email...',
