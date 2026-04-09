@@ -218,6 +218,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
         const SizedBox(height: 32),
 
+        _buildPillField(
+          controller: _emailController,
+          hint: 'Email...',
+          keyboardType: TextInputType.emailAddress,
+        ),
+
+        const SizedBox(height: 12),
+        _buildPillField(
+          controller: _passwordController,
+          hint: 'Password...',
+          obscure: true,
+        ),
+
+        const SizedBox(height: 12),
+
         AnimatedOpacity(
           opacity: _isLogin ? 0.0 : 1.0,
           duration: const Duration(milliseconds: 200),
@@ -239,18 +254,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-        _buildPillField(
-          controller: _emailController,
-          hint: 'Email...',
-          keyboardType: TextInputType.emailAddress,
-        ),
-
-        const SizedBox(height: 12),
-        _buildPillField(
-          controller: _passwordController,
-          hint: 'Password...',
-          obscure: true,
-        ),
 
         const SizedBox(height: 32),
         SizedBox(
@@ -269,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ? const CircularProgressIndicator(
                     color: Colors.white)
                 : Text(
-                    _isLogin ? 'LOGIN' : 'Register',
+                    _isLogin ? 'Login' : 'Register',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
