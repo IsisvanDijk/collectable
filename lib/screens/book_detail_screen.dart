@@ -62,19 +62,27 @@ class _BookDetailViewState extends State<_BookDetailView> {
     super.dispose();
   }
 
-  Widget _buildResponsiveRow(Widget left, Widget right) {
-    final isNarrow = MediaQuery.of(context).size.width < 360;
-    if (isNarrow) {
-      return Column(
-        children: [left, const SizedBox(height: 12), right],
-      );
-    }
-    return Row(
-      children: [
-        Expanded(child: left),
-        const SizedBox(width: 12),
-        Expanded(child: right),
-      ],
+  // IntrinsicHeight makes both pills in a row share the same height.
+  Widget _buildResponsiveRow(Widget left, Widget right, {double breakpoint = 300}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < breakpoint) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [left, const SizedBox(height: 12), right],
+          );
+        }
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: left),
+              const SizedBox(width: 12),
+              Expanded(child: right),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -89,8 +97,12 @@ class _BookDetailViewState extends State<_BookDetailView> {
     return Container(
       decoration: _pillDecoration,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      // Column layout: label top-left, value bottom-right.
+      // The value now has the full pill width available, so Flutter can wrap
+      // at word boundaries instead of breaking words mid-character.
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
@@ -100,17 +112,14 @@ class _BookDetailViewState extends State<_BookDetailView> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              displayValue,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: kTextColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.5,
-              ),
+          const SizedBox(height: 2),
+          Text(
+            displayValue,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: kTextColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -125,10 +134,12 @@ class _BookDetailViewState extends State<_BookDetailView> {
     final hasPhotos = photos.isNotEmpty;
     final coverUrl = book.coverImageUrl;
 
-    return Scaffold(
-        backgroundColor: Colors.transparent,
-      appBar: buildAppBar(context, title: 'Details', showSettings: false, showBack: true),
+    final screenHeight = MediaQuery.of(context).size.height;
+    final imageHeight = (screenHeight * 0.38).clamp(200.0, 360.0);
 
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: buildAppBar(context, title: 'Details', showSettings: false, showBack: true),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
         children: [
@@ -164,18 +175,17 @@ class _BookDetailViewState extends State<_BookDetailView> {
             ],
           ),
           const SizedBox(height: 16),
+
           if (hasPhotos) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: SizedBox(
-                height: 320,
+                height: imageHeight,
                 child: PageView.builder(
                   controller: _pageController,
                   itemCount: photos.length,
                   onPageChanged: (i) => setState(() => _currentPage = i),
-                  itemBuilder: (context, index) {
-                    return _buildImage(photos[index]);
-                  },
+                  itemBuilder: (context, index) => _buildImage(photos[index], imageHeight),
                 ),
               ),
             ),
@@ -186,22 +196,18 @@ class _BookDetailViewState extends State<_BookDetailView> {
                 children: List.generate(photos.length, (index) {
                   final isActive = index == _currentPage;
                   return GestureDetector(
-                    onTap: () {
-                      _pageController.animateToPage(
-                        index,
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOut,
-                      );
-                    },
+                    onTap: () => _pageController.animateToPage(
+                      index,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                    ),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       width: isActive ? 24 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: isActive
-                            ? kButtonRed
-                            : kTextColor.withOpacity(0.2),
+                        color: isActive ? kButtonRed : kTextColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -213,14 +219,14 @@ class _BookDetailViewState extends State<_BookDetailView> {
               borderRadius: BorderRadius.circular(20),
               child: Image.network(
                 coverUrl,
-                height: 320,
+                height: imageHeight,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _imagePlaceholder(),
+                errorBuilder: (_, __, ___) => _imagePlaceholder(imageHeight),
               ),
             ),
           ] else ...[
-            _imagePlaceholder(),
+            _imagePlaceholder(imageHeight),
           ],
 
           const SizedBox(height: 20),
@@ -268,28 +274,28 @@ class _BookDetailViewState extends State<_BookDetailView> {
     );
   }
 
-  Widget _buildImage(String path) {
+  Widget _buildImage(String path, double height) {
     if (path.startsWith('/')) {
       return Image.file(
         File(path),
         width: double.infinity,
-        height: 320,
+        height: height,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _imagePlaceholder(),
+        errorBuilder: (_, __, ___) => _imagePlaceholder(height),
       );
     }
     return Image.network(
       path,
       width: double.infinity,
-      height: 320,
+      height: height,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _imagePlaceholder(),
+      errorBuilder: (_, __, ___) => _imagePlaceholder(height),
     );
   }
 
-  Widget _imagePlaceholder() {
+  Widget _imagePlaceholder(double height) {
     return Container(
-      height: 320,
+      height: height,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.3),
         borderRadius: BorderRadius.circular(20),
