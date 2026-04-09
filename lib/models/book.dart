@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum BookCondition { mint, fine, good, fair, poor }
+enum BookCondition { asNew, nearPerfect, veryGood, good, fair, poor }
 
 extension BookConditionLabel on BookCondition {
   String get label {
     switch (this) {
-      case BookCondition.mint:
-        return 'Mint';
-      case BookCondition.fine:
-        return 'Fine';
+      case BookCondition.asNew:
+        return 'As New';
+      case BookCondition.nearPerfect:
+        return 'Near Perfect';
+      case BookCondition.veryGood:
+        return 'Very Good';
       case BookCondition.good:
         return 'Good';
       case BookCondition.fair:
@@ -44,12 +46,11 @@ class Book {
   // ── Free-text & media ────────────────────────────────────────────────────
   final String? notes;
   final List<String> photoUrls; // Firebase Storage URLs
-     final int coverPhotoIndex; // geeft aan welke foto de 'cover' is
+  final int coverPhotoIndex;    // geeft aan welke foto de 'cover' is
 
   // ── Metadata ─────────────────────────────────────────────────────────────
   final DateTime dateAdded;
   final DateTime? dateUpdated;
-
 
   const Book({
     required this.id,
@@ -111,10 +112,7 @@ class Book {
       coverImageUrl: map['coverImageUrl'] as String?,
       edition: map['edition'] as String?,
       printRun: map['printRun'] as String?,
-      condition: BookCondition.values.firstWhere(
-            (c) => c.name == (map['condition'] as String? ?? 'good'),
-        orElse: () => BookCondition.good,
-      ),
+      condition: _conditionFromString(map['condition'] as String?),
       signed: map['signed'] as bool? ?? false,
       signedBy: map['signedBy'] as String?,
       provenance: map['provenance'] as String?,
@@ -124,6 +122,31 @@ class Book {
       dateAdded: (map['dateAdded'] as Timestamp?)?.toDate() ?? DateTime.now(),
       dateUpdated: (map['dateUpdated'] as Timestamp?)?.toDate(),
     );
+  }
+
+  /// Handles both old enum names (e.g. 'mint', 'fine') and new ones gracefully.
+  static BookCondition _conditionFromString(String? value) {
+    switch (value) {
+      case 'asNew':
+        return BookCondition.asNew;
+      case 'nearPerfect':
+        return BookCondition.nearPerfect;
+      case 'veryGood':
+        return BookCondition.veryGood;
+      case 'good':
+        return BookCondition.good;
+      case 'fair':
+        return BookCondition.fair;
+      case 'poor':
+        return BookCondition.poor;
+    // Legacy values from the old scale — map to nearest equivalent
+      case 'mint':
+        return BookCondition.asNew;
+      case 'fine':
+        return BookCondition.nearPerfect;
+      default:
+        return BookCondition.good;
+    }
   }
 
   factory Book.fromDocument(DocumentSnapshot doc) {
@@ -145,7 +168,7 @@ class Book {
     String? provenance,
     String? notes,
     List<String>? photoUrls,
-       int? coverPhotoIndex,
+    int? coverPhotoIndex,
   }) {
     return Book(
       id: id,
@@ -164,7 +187,7 @@ class Book {
       provenance: provenance ?? this.provenance,
       notes: notes ?? this.notes,
       photoUrls: photoUrls ?? this.photoUrls,
-          coverPhotoIndex: coverPhotoIndex ?? this.coverPhotoIndex,
+      coverPhotoIndex: coverPhotoIndex ?? this.coverPhotoIndex,
       dateAdded: dateAdded,
       dateUpdated: DateTime.now(),
     );

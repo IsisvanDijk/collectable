@@ -34,7 +34,11 @@ class _AddBookScreenState extends State<AddBookScreen> {
   final _signedByController = TextEditingController();
   final _provenanceController = TextEditingController();
   final _notesController = TextEditingController();
-  BookCondition _condition = BookCondition.mint;
+
+  // condition starts null so we can detect "not chosen yet"
+  BookCondition? _condition;
+  bool _conditionError = false;
+
   bool _signed = false;
   int? _publishYear;
   String? _prefillCoverUrl;
@@ -72,7 +76,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
     _provenanceController.clear();
     _notesController.clear();
     setState(() {
-      _condition = BookCondition.mint;
+      _condition = null;
+      _conditionError = false;
       _signed = false;
       _publishYear = null;
       _prefillCoverUrl = null;
@@ -163,11 +168,16 @@ class _AddBookScreenState extends State<AddBookScreen> {
       _isbnController.text = value;
       if (result['publishYear'] != null) {
         _publishYear = result['publishYear'];
+        _publishYearController.text = result['publishYear'].toString();
       }
       if (result['coverImageUrl'] != null) {
         _prefillCoverUrl = result['coverImageUrl'];
       }
     } else {
+      // Pre-fill the ISBN even when the lookup fails, so the user
+      // doesn't have to type it again in the manual form.
+      _isbnController.text = value;
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No book found — please fill in manually')),
@@ -182,7 +192,15 @@ class _AddBookScreenState extends State<AddBookScreen> {
   }
 
   Future<void> _saveBook() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Validate the Form fields (title, author, year)
+    final formValid = _formKey.currentState!.validate();
+
+    // Validate condition separately (it's a dropdown, not a TextFormField)
+    final conditionValid = _condition != null;
+    setState(() => _conditionError = !conditionValid);
+
+    if (!formValid || !conditionValid) return;
+
     FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
     try {
@@ -198,7 +216,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
         coverPhotoIndex: 0,
         edition: _editionController.text.isEmpty ? null : _editionController.text,
         printRun: _printRunController.text.isEmpty ? null : _printRunController.text,
-        condition: _condition,
+        condition: _condition!,
         signed: _signed,
         signedBy: _signedByController.text.isEmpty ? null : _signedByController.text,
         provenance: _provenanceController.text.isEmpty ? null : _provenanceController.text,
@@ -350,20 +368,20 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 _buildResponsiveRow(
                   _buildPillField(
                     controller: _titleController,
-                    hint: 'Title',
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    hint: 'Title *',
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                   ),
                   _buildPillField(
                     controller: _authorController,
-                    hint: 'Author',
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    hint: 'Author *',
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                   ),
                 ),
                 const SizedBox(height: 12),
                 _buildResponsiveRow(
                   _buildPillField(
                     controller: _isbnController,
-                    hint: 'ISBN?',
+                    hint: 'ISBN',
                     keyboardType: TextInputType.number,
                   ),
                   _buildPillField(
@@ -377,25 +395,52 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     controller: _editionController,
                     hint: 'Edition',
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(40),
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<BookCondition>(
-                        value: _condition,
-                        dropdownColor: Colors.white,
-                        style: const TextStyle(color: kTextColor),
-                        hint: const Text('Condition', style: TextStyle(color: kTextColor)),
-                        items: BookCondition.values
-                            .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
-                            .toList(),
-                        onChanged: (value) => setState(() => _condition = value!),
+                  // Condition dropdown with inline error indication
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(40),
+                          border: Border.all(
+                            color: _conditionError ? Colors.red : Colors.white,
+                            width: 1.5,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<BookCondition>(
+                            value: _condition,
+                            dropdownColor: Colors.white,
+                            style: const TextStyle(color: kTextColor),
+                            hint: Text(
+                              'Condition *',
+                              style: TextStyle(
+                                color: _conditionError
+                                    ? Colors.red
+                                    : kTextColor.withOpacity(0.8),
+                              ),
+                            ),
+                            items: BookCondition.values
+                                .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))
+                                .toList(),
+                            onChanged: (value) => setState(() {
+                              _condition = value;
+                              _conditionError = false;
+                            }),
+                          ),
+                        ),
                       ),
-                    ),
+                      if (_conditionError)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, top: 4),
+                          child: Text(
+                            'Required',
+                            style: TextStyle(color: Colors.red, fontSize: 12),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -406,8 +451,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   ),
                   _buildPillField(
                     controller: _publishYearController,
-                    hint: 'Year published',
+                    hint: 'Year *',
                     keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Required';
+                      final year = int.tryParse(v.trim());
+                      if (year == null) return 'Invalid year';
+                      return null;
+                    },
                     onChanged: (value) {
                       setState(() {
                         _publishYear = int.tryParse(value);
