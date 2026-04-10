@@ -34,7 +34,7 @@ class _AuthStateNotifier extends ChangeNotifier {
   }
 }
 
-CustomTransitionPage noTransitionPage({
+CustomTransitionPage fadeTransitionPage({
   required BuildContext context,
   required GoRouterState state,
   required Widget child,
@@ -42,9 +42,14 @@ CustomTransitionPage noTransitionPage({
   return CustomTransitionPage(
     key: state.pageKey,
     child: child,
-    transitionDuration: Duration.zero,
-    reverseTransitionDuration: Duration.zero,
-    transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+    transitionDuration: const Duration(milliseconds: 300),
+    reverseTransitionDuration: const Duration(milliseconds: 300),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+        child: child,
+      );
+    },
   );
 }
 
@@ -65,25 +70,25 @@ final _router = GoRouter(
   routes: [
     GoRoute(
       path: '/onboarding',
-      pageBuilder: (context, state) => noTransitionPage(
+      pageBuilder: (context, state) => fadeTransitionPage(
         context: context, state: state, child: const OnboardingLoadingScreen(),
       ),
     ),
     GoRoute(
       path: '/login',
-      pageBuilder: (context, state) => noTransitionPage(
+      pageBuilder: (context, state) => fadeTransitionPage(
         context: context, state: state, child: const LoginScreen(),
       ),
     ),
     GoRoute(
       path: '/settings',
-      pageBuilder: (context, state) => noTransitionPage(
+      pageBuilder: (context, state) => fadeTransitionPage(
         context: context, state: state, child: const SettingsScreen(),
       ),
     ),
     GoRoute(
       path: '/book/:id/edit',
-      pageBuilder: (context, state) => noTransitionPage(
+      pageBuilder: (context, state) => fadeTransitionPage(
         context: context,
         state: state,
         child: EditBookScreen(book: state.extra as Book),
@@ -97,14 +102,13 @@ final _router = GoRouter(
         StatefulShellBranch(routes: [
           GoRoute(
             path: '/',
-            pageBuilder: (context, state) => noTransitionPage(
+            pageBuilder: (context, state) => fadeTransitionPage(
               context: context, state: state, child: const HomeOverviewScreen(),
             ),
             routes: [
-              // Sub-route — stays inside the shell so the nav bar persists
               GoRoute(
-                path: 'book/:id',   // Note: no leading slash
-                pageBuilder: (context, state) => noTransitionPage(
+                path: 'book/:id',
+                pageBuilder: (context, state) => fadeTransitionPage(
                   context: context,
                   state: state,
                   child: BookDetailScreen(bookId: state.pathParameters['id']!),
@@ -116,7 +120,7 @@ final _router = GoRouter(
         StatefulShellBranch(routes: [
           GoRoute(
             path: '/add',
-            pageBuilder: (context, state) => noTransitionPage(
+            pageBuilder: (context, state) => fadeTransitionPage(
               context: context, state: state, child: const AddBookScreen(),
             ),
           ),
@@ -124,7 +128,7 @@ final _router = GoRouter(
         StatefulShellBranch(routes: [
           GoRoute(
             path: '/export',
-            pageBuilder: (context, state) => noTransitionPage(
+            pageBuilder: (context, state) => fadeTransitionPage(
               context: context, state: state, child: const ExportScreen(),
             ),
           ),
