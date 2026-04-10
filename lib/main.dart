@@ -134,6 +134,21 @@ final _router = GoRouter(
   ],
 );
 
+class _NoTransitionBuilder extends PageTransitionsBuilder {
+  const _NoTransitionBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+      PageRoute<T> route,
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child,
+      ) {
+    return child;
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -145,6 +160,12 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
         scaffoldBackgroundColor: Colors.transparent,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: _NoTransitionBuilder(),
+            TargetPlatform.iOS: _NoTransitionBuilder(),
+          },
+        ),
       ),
       routerConfig: _router,
       debugShowCheckedModeBanner: false,
