@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../repositories/book_repository.dart';
@@ -20,19 +20,9 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
   final _bookRepo = BookRepository();
   final _userRepo = UserRepository();
   final _searchController = TextEditingController();
-  String _searchQuery = '';
+
   BookFilter _activeFilter = BookFilter.all;
   BookCondition? _conditionFilter;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text;
-      });
-    });
-  }
 
   @override
   void dispose() {
@@ -41,8 +31,8 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
   }
 
   List<Book> _applyFilters(List<Book> books) {
+    final query = _searchController.text.toLowerCase();
     List<Book> filtered = books.where((book) {
-      final query = _searchQuery.toLowerCase();
       return book.title.toLowerCase().contains(query) ||
           book.author.toLowerCase().contains(query) ||
           (book.isbn?.toLowerCase().contains(query) ?? false);
@@ -56,15 +46,17 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
         break;
       case BookFilter.firstEdition:
         filtered = filtered.where((book) {
-          final edition = book.edition?.toLowerCase() ?? '';
-          final printRun = book.printRun?.toLowerCase() ?? '';
-          return edition.contains('1st') || edition.contains('first') ||
-              printRun.contains('1st') || printRun.contains('first');
+          final edition = book.edition?.toLowerCase().trim() ?? '';
+          final printRun = book.printRun?.toLowerCase().trim() ?? '';
+          final patterns = RegExp(r'(^1$|1st|first|1e$|eerste|1ste)');
+          return patterns.hasMatch(edition) || patterns.hasMatch(printRun);
         }).toList();
         break;
       case BookFilter.condition:
         if (_conditionFilter != null) {
-          filtered = filtered.where((book) => book.condition == _conditionFilter).toList();
+          filtered = filtered
+              .where((book) => book.condition == _conditionFilter)
+              .toList();
         }
         break;
     }
@@ -88,7 +80,8 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
             hintText: 'Search by title, author, or ISBN',
             hintStyle: TextStyle(color: kTextColor.withOpacity(0.5)),
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             prefixIcon: const Icon(Icons.search, color: kTextColor),
           ),
         ),
@@ -117,14 +110,16 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
               });
             }),
             const SizedBox(width: 8),
-            _buildFilterChip('1st ed', _activeFilter == BookFilter.firstEdition, () {
+            _buildFilterChip(
+                '1st ed', _activeFilter == BookFilter.firstEdition, () {
               setState(() {
                 _activeFilter = BookFilter.firstEdition;
                 _conditionFilter = null;
               });
             }),
             const SizedBox(width: 8),
-            _buildFilterChip('Condition', _activeFilter == BookFilter.condition, () async {
+            _buildFilterChip(
+                'Condition', _activeFilter == BookFilter.condition, () async {
               final condition = await showModalBottomSheet<BookCondition>(
                 context: context,
                 builder: (context) {
@@ -155,7 +150,8 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildFilterChip(
+      String label, bool isSelected, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -184,7 +180,6 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
     return StreamBuilder(
       stream: _userRepo.watchUser(),
       builder: (context, userSnapshot) {
-        // Use firstName from Firestore, fall back to 'there'
         final firstName = userSnapshot.data?.firstName ?? '';
         final displayName = firstName.isNotEmpty ? firstName : 'there';
 
@@ -201,7 +196,7 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
                 return Center(child: Text('Error: ${snapshot.error}'));
               }
               final books = snapshot.data ?? [];
-              final filteredBooks = _applyFilters(books);
+
               if (books.isEmpty) {
                 return Center(
                   child: Column(
@@ -231,40 +226,44 @@ class _HomeOverviewScreenState extends State<HomeOverviewScreen> {
                     ],
                   ),
                 );
-              } else {
-                return Column(
-                  children: [
-                    _buildSearchBar(),
-                    _buildFilterChips(),
-                    if (filteredBooks.isEmpty)
-                      const Expanded(
-                        child: Center(
-                          child: Text(
-                            'No books match your search',
-                            style: TextStyle(color: kTextColor, fontSize: 16),
-                          ),
-                        ),
-                      )
-                    else
-                      Expanded(
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            childAspectRatio: 0.65,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                          ),
-                          itemCount: filteredBooks.length,
-                          itemBuilder: (context, index) {
-                            final book = filteredBooks[index];
-                            return _BookCard(book: book);
-                          },
+              }
+
+              final filteredBooks = _applyFilters(books);
+
+              return Column(
+                children: [
+                  _buildSearchBar(),
+                  _buildFilterChips(),
+                  if (filteredBooks.isEmpty)
+                    const Expanded(
+                      child: Center(
+                        child: Text(
+                          'No books match your search',
+                          style:
+                          TextStyle(color: kTextColor, fontSize: 16),
                         ),
                       ),
-                  ],
-                );
-              }
+                    )
+                  else
+                    Expanded(
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate:
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: 0.65,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: filteredBooks.length,
+                        itemBuilder: (context, index) {
+                          final book = filteredBooks[index];
+                          return _BookCard(book: book);
+                        },
+                      ),
+                    ),
+                ],
+              );
             },
           ),
         );
@@ -293,7 +292,8 @@ class _BookCard extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
                 child: _buildCoverImage(),
               ),
             ),
@@ -322,29 +322,34 @@ class _BookCard extends StatelessWidget {
 
   Widget _buildCoverImage() {
     final imageUrl = book.photoUrls.isNotEmpty
-        ? book.photoUrls[book.coverPhotoIndex.clamp(0, book.photoUrls.length - 1)]
+        ? book.photoUrls[
+            book.coverPhotoIndex.clamp(0, book.photoUrls.length - 1)]
         : book.coverImageUrl;
 
     if (imageUrl == null) {
       return Container(
         width: double.infinity,
         color: Colors.grey.shade300,
-        child: const Icon(Icons.menu_book_outlined, size: 50, color: Colors.grey),
+        child: const Icon(Icons.menu_book_outlined,
+            size: 50, color: Colors.grey),
       );
     }
 
-    final isLocal = imageUrl.startsWith('/') || imageUrl.startsWith('file://');
+    final isLocal =
+        imageUrl.startsWith('/') || imageUrl.startsWith('file://');
 
     return Image(
       image: isLocal
-          ? FileImage(File(imageUrl.replaceFirst('file://', ''))) as ImageProvider
+          ? FileImage(File(imageUrl.replaceFirst('file://', '')))
+              as ImageProvider
           : NetworkImage(imageUrl),
       width: double.infinity,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => Container(
         width: double.infinity,
         color: Colors.grey.shade300,
-        child: const Icon(Icons.menu_book_outlined, size: 50, color: Colors.grey),
+        child: const Icon(Icons.menu_book_outlined,
+            size: 50, color: Colors.grey),
       ),
     );
   }

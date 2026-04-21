@@ -19,19 +19,8 @@ class ExportScreen extends StatefulWidget {
 class _ExportScreenState extends State<ExportScreen> {
   final Set<String> _selectedIds = {};
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
   bool _isGenerating = false;
   final UserRepository _userRepo = UserRepository();
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text;
-      });
-    });
-  }
 
   @override
   void dispose() {
@@ -40,8 +29,8 @@ class _ExportScreenState extends State<ExportScreen> {
   }
 
   List<Book> _applySearch(List<Book> books) {
-    if (_searchQuery.isEmpty) return books;
-    final query = _searchQuery.toLowerCase();
+    final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) return books;
     return books.where((book) {
       return book.title.toLowerCase().contains(query) ||
           book.author.toLowerCase().contains(query) ||
@@ -78,12 +67,6 @@ class _ExportScreenState extends State<ExportScreen> {
             contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             prefixIcon: const Icon(Icons.search, color: kTextColor),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-              icon: Icon(Icons.close, color: kTextColor.withOpacity(0.5)),
-              onPressed: () => _searchController.clear(),
-            )
-                : null,
           ),
         ),
       ),
@@ -116,12 +99,11 @@ class _ExportScreenState extends State<ExportScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       final appUser = await _userRepo.getUser();
-      
-      // Use first name + last name, fallback to displayName, then email
+
       final ownerName = appUser?.fullName.isNotEmpty == true
           ? appUser!.fullName
           : (user?.displayName ?? user?.email ?? 'Unknown');
-      
+
       final exportDate =
           '${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}';
       const footer = 'Made with Collectable';
@@ -322,7 +304,8 @@ class _ExportScreenState extends State<ExportScreen> {
                         child: pw.ClipRRect(
                           horizontalRadius: 6,
                           verticalRadius: 6,
-                          child: pw.Image(right, fit: pw.BoxFit.cover),
+                          child:
+                          pw.Image(right, fit: pw.BoxFit.cover),
                         ),
                       )
                           : pw.SizedBox(),
@@ -394,8 +377,8 @@ class _ExportScreenState extends State<ExportScreen> {
           pw.Expanded(
             child: pw.Text(
               value,
-              style: pw.TextStyle(
-                  fontSize: 11, fontWeight: pw.FontWeight.bold),
+              style:
+              pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
             ),
           ),
         ],
@@ -429,74 +412,82 @@ class _ExportScreenState extends State<ExportScreen> {
             );
           }
 
-          final filteredBooks = _applySearch(books);
-
           return Column(
             children: [
               _buildSearchBar(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-                child: Row(
-                  children: [
-                    _ActionChip(
-                      label: 'Select all',
-                      filled: true,
-                      onTap: () => _selectAll(filteredBooks),
-                    ),
-                    const SizedBox(width: 10),
-                    _ActionChip(
-                      label: 'Clear',
-                      filled: false,
-                      onTap: _clearAll,
-                    ),
-                    const Spacer(),
-                    if (_selectedIds.isNotEmpty)
-                      Text(
-                        '${_selectedIds.length} selected',
-                        style: TextStyle(
-                          color: kTextColor.withOpacity(0.6),
-                          fontSize: 13,
+              ListenableBuilder(
+                listenable: _searchController,
+                builder: (context, _) {
+                  final filteredBooks = _applySearch(books);
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                    child: Row(
+                      children: [
+                        _ActionChip(
+                          label: 'Select all',
+                          filled: true,
+                          onTap: () => _selectAll(filteredBooks),
                         ),
-                      ),
-                  ],
+                        const SizedBox(width: 10),
+                        _ActionChip(
+                          label: 'Clear',
+                          filled: false,
+                          onTap: _clearAll,
+                        ),
+                        const Spacer(),
+                        if (_selectedIds.isNotEmpty)
+                          Text(
+                            '${_selectedIds.length} selected',
+                            style: TextStyle(
+                              color: kTextColor.withOpacity(0.6),
+                              fontSize: 13,
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              Expanded(
+                child: ListenableBuilder(
+                  listenable: _searchController,
+                  builder: (context, _) {
+                    final filteredBooks = _applySearch(books);
+                    if (filteredBooks.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No books match your search',
+                          style: TextStyle(
+                            color: kTextColor.withOpacity(0.6),
+                            fontSize: 15,
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                      itemCount: filteredBooks.length,
+                      itemBuilder: (context, index) {
+                        final book = filteredBooks[index];
+                        final isSelected = _selectedIds.contains(book.id);
+                        return _BookExportTile(
+                          book: book,
+                          isSelected: isSelected,
+                          onTap: () {
+                            setState(() {
+                              if (isSelected) {
+                                _selectedIds.remove(book.id);
+                              } else {
+                                _selectedIds.add(book.id);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
-              if (filteredBooks.isEmpty)
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      'No books match your search',
-                      style: TextStyle(
-                        color: kTextColor.withOpacity(0.6),
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
-                    itemCount: filteredBooks.length,
-                    itemBuilder: (context, index) {
-                      final book = filteredBooks[index];
-                      final isSelected = _selectedIds.contains(book.id);
-                      return _BookExportTile(
-                        book: book,
-                        isSelected: isSelected,
-                        onTap: () {
-                          setState(() {
-                            if (isSelected) {
-                              _selectedIds.remove(book.id);
-                            } else {
-                              _selectedIds.add(book.id);
-                            }
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                 child: SizedBox(

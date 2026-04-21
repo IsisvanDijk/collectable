@@ -44,7 +44,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
   String? _prefillCoverUrl;
   List<String> _photoUrls = [];
   bool _isLoading = false;
-  bool _isManual = true;
+  bool _isManual = false;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -648,3 +648,4 @@ class _AddBookScreenState extends State<AddBookScreen> {
     );
   }
 }
+

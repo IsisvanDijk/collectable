@@ -255,7 +255,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
             backgroundColor: Colors.transparent,
             selectedIndex: navigationShell.currentIndex,
             onDestinationSelected: (index) =>
-                navigationShell.goBranch(index),
+                navigationShell.goBranch(index, initialLocation: true),
             indicatorColor: Colors.white.withOpacity(0.4),
             destinations: const [
               NavigationDestination(

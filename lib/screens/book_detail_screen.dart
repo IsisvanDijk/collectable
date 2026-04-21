@@ -222,7 +222,7 @@ class _BookDetailViewState extends State<_BookDetailView> {
                 height: imageHeight,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _imagePlaceholder(imageHeight),
+                errorBuilder: (_, _, _) => _imagePlaceholder(imageHeight),
               ),
             ),
           ] else ...[
@@ -281,7 +281,7 @@ class _BookDetailViewState extends State<_BookDetailView> {
         width: double.infinity,
         height: height,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _imagePlaceholder(height),
+        errorBuilder: (_, _, _) => _imagePlaceholder(height),
       );
     }
     return Image.network(
@@ -289,7 +289,7 @@ class _BookDetailViewState extends State<_BookDetailView> {
       width: double.infinity,
       height: height,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _imagePlaceholder(height),
+      errorBuilder: (_, _, _) => _imagePlaceholder(height),
     );
   }
 
