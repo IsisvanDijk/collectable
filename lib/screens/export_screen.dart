@@ -8,6 +8,7 @@ import '../models/book.dart';
 import '../repositories/book_repository.dart';
 import '../repositories/user_repository.dart';
 import '../main.dart';
+import '../widgets/local_image.dart';
 
 class ExportScreen extends StatefulWidget {
   const ExportScreen({super.key});
@@ -604,28 +605,18 @@ class _BookExportTile extends StatelessWidget {
 
   Widget _buildThumbnail(String? path) {
     if (path == null) {
-      return Container(
-        color: const Color(0xFFF0EAE0),
-        child: Icon(Icons.menu_book_outlined,
-            size: 22, color: kTextColor.withOpacity(0.3)),
-      );
+      return Container(color: const Color(0xFFF0EAE0),
+          child: Icon(Icons.menu_book_outlined, size: 22, color: kTextColor.withOpacity(0.3)));
     }
-    if (path.startsWith('/')) {
-      return Image.file(File(path),
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
-            color: const Color(0xFFF0EAE0),
-            child: Icon(Icons.menu_book_outlined,
-                size: 22, color: kTextColor.withOpacity(0.3)),
-          ));
+    if (path.startsWith('http')) {
+      return Image.network(path, fit: BoxFit.cover);
     }
-    return Image.network(path,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          color: const Color(0xFFF0EAE0),
-          child: Icon(Icons.menu_book_outlined,
-              size: 22, color: kTextColor.withOpacity(0.3)),
-        ));
+    return LocalImage(
+      storedPath: path,
+      fit: BoxFit.cover,
+      placeholder: (_) => Container(color: const Color(0xFFF0EAE0),
+          child: Icon(Icons.menu_book_outlined, size: 22, color: kTextColor.withOpacity(0.3))),
+    );
   }
 }
 

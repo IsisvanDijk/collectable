@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../models/book.dart';
 import '../repositories/book_repository.dart';
 import '../main.dart';
+import '../widgets/local_image.dart';
 
 
 class EditBookScreen extends StatefulWidget {
@@ -129,7 +130,8 @@ class _EditBookScreenState extends State<EditBookScreen> {
         final localPath = p.join(appDir.path, 'book_photos', fileName);
         await Directory(p.dirname(localPath)).create(recursive: true);
         await File(image.path).copy(localPath);
-        setState(() => _photoUrls.add(localPath));
+        final relativePath = p.join('book_photos', fileName);
+        setState(() => _photoUrls.add(relativePath));
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -439,11 +441,22 @@ class _EditBookScreenState extends State<EditBookScreen> {
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: path.startsWith('/')
-                                    ? Image.file(File(path),
+                                child: path.startsWith('http')
+                                    ? Image.network(path,
                                     width: 100, height: 100, fit: BoxFit.cover)
-                                    : Image.network(path,
-                                    width: 100, height: 100, fit: BoxFit.cover),
+                                    : LocalImage(
+                                  storedPath: path,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  placeholder: (_) => Container(
+                                    width: 100,
+                                    height: 100,
+                                    color: Colors.grey.shade300,
+                                    child: const Icon(Icons.menu_book_outlined,
+                                        color: Colors.grey),
+                                  ),
+                                ),
                               ),
                             ),
                             if (isCover)
@@ -451,8 +464,7 @@ class _EditBookScreenState extends State<EditBookScreen> {
                                 bottom: 6,
                                 left: 6,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: kButtonRed,
                                     borderRadius: BorderRadius.circular(8),
@@ -472,8 +484,7 @@ class _EditBookScreenState extends State<EditBookScreen> {
                                   setState(() {
                                     _photoUrls.removeAt(index);
                                     if (_coverIndex >= _photoUrls.length) {
-                                      _coverIndex =
-                                          (_photoUrls.length - 1).clamp(0, 999);
+                                      _coverIndex = (_photoUrls.length - 1).clamp(0, 999);
                                     }
                                   });
                                 },
@@ -483,8 +494,7 @@ class _EditBookScreenState extends State<EditBookScreen> {
                                     shape: BoxShape.circle,
                                   ),
                                   padding: const EdgeInsets.all(4),
-                                  child: const Icon(Icons.close,
-                                      size: 14, color: Colors.white),
+                                  child: const Icon(Icons.close, size: 14, color: Colors.white),
                                 ),
                               ),
                             ),

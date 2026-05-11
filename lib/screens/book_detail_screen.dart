@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../models/book.dart';
 import '../repositories/book_repository.dart';
 import '../main.dart';
+import '../widgets/local_image.dart';
 
 class BookDetailScreen extends StatelessWidget {
   final String bookId;
@@ -275,21 +276,12 @@ class _BookDetailViewState extends State<_BookDetailView> {
   }
 
   Widget _buildImage(String path, double height) {
-    if (path.startsWith('/')) {
-      return Image.file(
-        File(path),
-        width: double.infinity,
-        height: height,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _imagePlaceholder(height),
-      );
-    }
-    return Image.network(
-      path,
+    return LocalImage(
+      storedPath: path,
       width: double.infinity,
       height: height,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _imagePlaceholder(height),
+      placeholder: (_) => _imagePlaceholder(height),
     );
   }
 

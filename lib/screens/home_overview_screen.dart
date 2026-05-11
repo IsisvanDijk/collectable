@@ -6,6 +6,7 @@ import '../repositories/book_repository.dart';
 import '../repositories/user_repository.dart';
 import '../models/book.dart';
 import '../main.dart';
+import '../widgets/local_image.dart';
 
 enum BookFilter { all, signed, firstEdition, condition }
 
@@ -322,34 +323,32 @@ class _BookCard extends StatelessWidget {
 
   Widget _buildCoverImage() {
     final imageUrl = book.photoUrls.isNotEmpty
-        ? book.photoUrls[
-            book.coverPhotoIndex.clamp(0, book.photoUrls.length - 1)]
+        ? book.photoUrls[book.coverPhotoIndex.clamp(0, book.photoUrls.length - 1)]
         : book.coverImageUrl;
 
     if (imageUrl == null) {
       return Container(
-        width: double.infinity,
         color: Colors.grey.shade300,
-        child: const Icon(Icons.menu_book_outlined,
-            size: 50, color: Colors.grey),
+        child: const Icon(Icons.menu_book_outlined, size: 50, color: Colors.grey),
       );
     }
 
-    final isLocal =
-        imageUrl.startsWith('/') || imageUrl.startsWith('file://');
+    // Remote cover from Open Library — use normally
+    if (imageUrl.startsWith('http')) {
+      return Image.network(imageUrl, width: double.infinity, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: Colors.grey.shade300,
+            child: const Icon(Icons.menu_book_outlined, size: 50, color: Colors.grey),
+          ));
+    }
 
-    return Image(
-      image: isLocal
-          ? FileImage(File(imageUrl.replaceFirst('file://', '')))
-              as ImageProvider
-          : NetworkImage(imageUrl),
+    return LocalImage(
+      storedPath: imageUrl,
       width: double.infinity,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Container(
-        width: double.infinity,
+      placeholder: (_) => Container(
         color: Colors.grey.shade300,
-        child: const Icon(Icons.menu_book_outlined,
-            size: 50, color: Colors.grey),
+        child: const Icon(Icons.menu_book_outlined, size: 50, color: Colors.grey),
       ),
     );
   }

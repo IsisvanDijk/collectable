@@ -10,6 +10,7 @@ import '../models/book.dart';
 import '../repositories/book_repository.dart';
 import '../services/book_lookup_service.dart';
 import '../main.dart';
+import '../widgets/local_image.dart';
 
 const kButtonPink = Color(0xFFE6C5CA);
 
@@ -135,7 +136,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
         final localPath = p.join(appDir.path, 'book_photos', fileName);
         await Directory(p.dirname(localPath)).create(recursive: true);
         await File(image.path).copy(localPath);
-        setState(() => _photoUrls.add(localPath));
+        final relativePath = p.join('book_photos', fileName);
+        setState(() => _photoUrls.add(relativePath));
       } catch (e, stackTrace) {
         print('=== PHOTO ERROR: $e');
         print(stackTrace);
@@ -520,11 +522,17 @@ class _AddBookScreenState extends State<AddBookScreen> {
                               margin: const EdgeInsets.only(right: 8),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  File(path),
+                                child: LocalImage(
+                                  storedPath: path,
                                   width: 100,
                                   height: 100,
                                   fit: BoxFit.cover,
+                                  placeholder: (_) => Container(
+                                    width: 100,
+                                    height: 100,
+                                    color: Colors.grey.shade300,
+                                    child: const Icon(Icons.menu_book_outlined, color: Colors.grey),
+                                  ),
                                 ),
                               ),
                             ),
