@@ -9,6 +9,8 @@ import '../repositories/book_repository.dart';
 import '../repositories/user_repository.dart';
 import '../main.dart';
 import '../widgets/local_image.dart';
+import 'package:http/http.dart' as http;
+import '../utils/photo_path.dart';
 
 class ExportScreen extends StatefulWidget {
   const ExportScreen({super.key});
@@ -74,9 +76,15 @@ class _ExportScreenState extends State<ExportScreen> {
     );
   }
 
-  Future<pw.ImageProvider?> _loadImage(String path) async {
+  Future<pw.ImageProvider?> _loadImage(String storedPath) async {
     try {
-      final file = File(path);
+      final resolved = await resolvePhotoPath(storedPath);
+      if (resolved.startsWith('http')) {
+        final response = await http.get(Uri.parse(resolved));
+        if (response.statusCode == 200) return pw.MemoryImage(response.bodyBytes);
+        return null;
+      }
+      final file = File(resolved);
       if (!await file.exists()) return null;
       final bytes = await file.readAsBytes();
       return pw.MemoryImage(bytes);
