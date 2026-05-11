@@ -41,48 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCyDVaDcM6tFP-ecZCdu33wSVQQfxumdlA',
-    appId: '1:628935225637:web:a75a2d92a1c05368aeeacc',
-    messagingSenderId: '628935225637',
-    projectId: 'collectable-app-2026',
-    authDomain: 'collectable-app-2026.firebaseapp.com',
-    storageBucket: 'collectable-app-2026.firebasestorage.app',
+    apiKey: 'AIzaSyCLrEbDqk9oNbhKbIJdBUnWRjJyGX8dm14',
+    appId: '1:134199368025:web:0a2e0550e225472d5c5448',
+    messagingSenderId: '134199368025',
+    projectId: 'collectable-87df4',
+    authDomain: 'collectable-87df4.firebaseapp.com',
+    storageBucket: 'collectable-87df4.firebasestorage.app',
+    measurementId: 'G-ZJ9R3T8H57',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBLiOk4pT_24IQxjap3fTSUKs1gqE-MEeI',
-    appId: '1:628935225637:android:db6b180ddc3b957faeeacc',
-    messagingSenderId: '628935225637',
-    projectId: 'collectable-app-2026',
-    storageBucket: 'collectable-app-2026.firebasestorage.app',
+    apiKey: 'AIzaSyC_U2AtH4moi4fD8JJrat3QWVgqVPmNKP8',
+    appId: '1:134199368025:android:646c6556de26bccc5c5448',
+    messagingSenderId: '134199368025',
+    projectId: 'collectable-87df4',
+    storageBucket: 'collectable-87df4.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyC_ceIj88hYT69loiWgLKsws-fbqxEiwp8',
-    appId: '1:628935225637:ios:262198c8c618668eaeeacc',
-    messagingSenderId: '628935225637',
-    projectId: 'collectable-app-2026',
-    storageBucket: 'collectable-app-2026.firebasestorage.app',
-    iosClientId: '628935225637-93jun7luf7gv45f3ce3qgi917k2hh8fh.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCajYfXCYEruSFRVNNFrvlgyEfxb8T8ERA',
+    appId: '1:134199368025:ios:9efa6bfbf00768b65c5448',
+    messagingSenderId: '134199368025',
+    projectId: 'collectable-87df4',
+    storageBucket: 'collectable-87df4.firebasestorage.app',
     iosBundleId: 'com.example.collectable',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyC_ceIj88hYT69loiWgLKsws-fbqxEiwp8',
-    appId: '1:628935225637:ios:262198c8c618668eaeeacc',
-    messagingSenderId: '628935225637',
-    projectId: 'collectable-app-2026',
-    storageBucket: 'collectable-app-2026.firebasestorage.app',
-    iosClientId: '628935225637-93jun7luf7gv45f3ce3qgi917k2hh8fh.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCajYfXCYEruSFRVNNFrvlgyEfxb8T8ERA',
+    appId: '1:134199368025:ios:9efa6bfbf00768b65c5448',
+    messagingSenderId: '134199368025',
+    projectId: 'collectable-87df4',
+    storageBucket: 'collectable-87df4.firebasestorage.app',
     iosBundleId: 'com.example.collectable',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCyDVaDcM6tFP-ecZCdu33wSVQQfxumdlA',
-    appId: '1:628935225637:web:be43db9af2638a8aaeeacc',
-    messagingSenderId: '628935225637',
-    projectId: 'collectable-app-2026',
-    authDomain: 'collectable-app-2026.firebaseapp.com',
-    storageBucket: 'collectable-app-2026.firebasestorage.app',
+    apiKey: 'AIzaSyCLrEbDqk9oNbhKbIJdBUnWRjJyGX8dm14',
+    appId: '1:134199368025:web:737883164eba617b5c5448',
+    messagingSenderId: '134199368025',
+    projectId: 'collectable-87df4',
+    authDomain: 'collectable-87df4.firebaseapp.com',
+    storageBucket: 'collectable-87df4.firebasestorage.app',
+    measurementId: 'G-M89GP333BQ',
   );
+
 }

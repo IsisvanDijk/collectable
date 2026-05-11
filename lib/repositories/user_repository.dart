@@ -33,7 +33,6 @@ class UserRepository {
     String? lastName,
   }) async {
     final now = Timestamp.fromDate(DateTime.now());
-    // Use set+merge so createdAt is only written on first save
     await _userDoc.set({
       'email': email,
       'firstName': firstName,
@@ -47,8 +46,7 @@ class UserRepository {
     required String? firstName,
     required String? lastName,
   }) async {
-    // Use set+merge instead of update() so it works even if the doc doesn't exist yet
-     _userDoc.set({
+    await _userDoc.set({
       'firstName': firstName,
       'lastName': lastName,
       'updatedAt': Timestamp.fromDate(DateTime.now()),
