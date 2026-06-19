@@ -110,8 +110,7 @@ class _EditBookScreenState extends State<EditBookScreen> {
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
-              leading:
-              const Icon(Icons.photo_library_outlined, color: kTextColor),
+              leading: const Icon(Icons.photo_library_outlined, color: kTextColor),
               title: const Text('Choose from gallery'),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -266,8 +265,11 @@ class _EditBookScreenState extends State<EditBookScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Title on its own line, Back button right-aligned below —
+              // mirrors the layout on the detail screen so long titles
+              // never get squeezed by the button.
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     widget.book.title,
@@ -277,20 +279,24 @@ class _EditBookScreenState extends State<EditBookScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => context.pop(),
-                    child: Container(
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(40),
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      child: const Text(
-                        'Back',
-                        style: TextStyle(
-                            color: kTextColor, fontWeight: FontWeight.w600),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () => context.pop(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(40),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: const Text(
+                          'Back',
+                          style: TextStyle(
+                              color: kTextColor, fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
                   ),
@@ -377,14 +383,12 @@ class _EditBookScreenState extends State<EditBookScreen> {
                   borderRadius: BorderRadius.circular(40),
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),
-                padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Signed?',
-                        style:
-                        TextStyle(color: kTextColor, fontSize: 16)),
+                        style: TextStyle(color: kTextColor, fontSize: 16)),
                     Switch(
                       value: _signed,
                       onChanged: (v) => setState(() => _signed = v),
@@ -464,7 +468,8 @@ class _EditBookScreenState extends State<EditBookScreen> {
                                 bottom: 6,
                                 left: 6,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: kButtonRed,
                                     borderRadius: BorderRadius.circular(8),
@@ -484,7 +489,8 @@ class _EditBookScreenState extends State<EditBookScreen> {
                                   setState(() {
                                     _photoUrls.removeAt(index);
                                     if (_coverIndex >= _photoUrls.length) {
-                                      _coverIndex = (_photoUrls.length - 1).clamp(0, 999);
+                                      _coverIndex =
+                                          (_photoUrls.length - 1).clamp(0, 999);
                                     }
                                   });
                                 },
@@ -494,7 +500,8 @@ class _EditBookScreenState extends State<EditBookScreen> {
                                     shape: BoxShape.circle,
                                   ),
                                   padding: const EdgeInsets.all(4),
-                                  child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                  child: const Icon(Icons.close,
+                                      size: 14, color: Colors.white),
                                 ),
                               ),
                             ),

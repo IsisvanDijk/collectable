@@ -14,7 +14,6 @@ import '../utils/photo_path.dart';
 
 class ExportScreen extends StatefulWidget {
   const ExportScreen({super.key});
-
   @override
   State<ExportScreen> createState() => _ExportScreenState();
 }
@@ -41,15 +40,9 @@ class _ExportScreenState extends State<ExportScreen> {
     }).toList();
   }
 
-  void _selectAll(List<Book> books) {
-    setState(() {
-      _selectedIds.addAll(books.map((b) => b.id));
-    });
-  }
-
-  void _clearAll() {
-    setState(() => _selectedIds.clear());
-  }
+  void _selectAll(List<Book> books) =>
+      setState(() => _selectedIds.addAll(books.map((b) => b.id)));
+  void _clearAll() => setState(() => _selectedIds.clear());
 
   Widget _buildSearchBar() {
     return Padding(
@@ -67,8 +60,7 @@ class _ExportScreenState extends State<ExportScreen> {
             hintText: 'Search by title, author, or ISBN',
             hintStyle: TextStyle(color: kTextColor.withOpacity(0.5)),
             border: InputBorder.none,
-            contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             prefixIcon: const Icon(Icons.search, color: kTextColor),
           ),
         ),
@@ -86,16 +78,14 @@ class _ExportScreenState extends State<ExportScreen> {
       }
       final file = File(resolved);
       if (!await file.exists()) return null;
-      final bytes = await file.readAsBytes();
-      return pw.MemoryImage(bytes);
+      return pw.MemoryImage(await file.readAsBytes());
     } catch (_) {
       return null;
     }
   }
 
   Future<void> _exportPdf(List<Book> allBooks) async {
-    final selected =
-    allBooks.where((b) => _selectedIds.contains(b.id)).toList();
+    final selected = allBooks.where((b) => _selectedIds.contains(b.id)).toList();
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Select at least one book to export')),
@@ -108,7 +98,6 @@ class _ExportScreenState extends State<ExportScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       final appUser = await _userRepo.getUser();
-
       final ownerName = appUser?.fullName.isNotEmpty == true
           ? appUser!.fullName
           : (user?.displayName ?? user?.email ?? 'Unknown');
@@ -124,56 +113,81 @@ class _ExportScreenState extends State<ExportScreen> {
         ),
       );
 
+      // Title page
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
           build: (pw.Context ctx) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text(
-                'Book Collection',
-                style: pw.TextStyle(
-                  fontSize: 32,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
+              pw.Text('Book Collection',
+                  style: pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 12),
-              pw.Text(
-                'Insurance documentation',
-                style: const pw.TextStyle(
-                    fontSize: 16, color: PdfColors.grey600),
-              ),
+              pw.Text('Insurance documentation',
+                  style: const pw.TextStyle(fontSize: 16, color: PdfColors.grey600)),
               pw.SizedBox(height: 40),
               pw.Divider(),
               pw.SizedBox(height: 20),
-              pw.Text('Owner: $ownerName',
-                  style: const pw.TextStyle(fontSize: 14)),
+              pw.Text('Owner: $ownerName', style: const pw.TextStyle(fontSize: 14)),
               pw.SizedBox(height: 8),
-              pw.Text('Date of export: $exportDate',
-                  style: const pw.TextStyle(fontSize: 14)),
+              pw.Text('Date of export: $exportDate', style: const pw.TextStyle(fontSize: 14)),
               pw.SizedBox(height: 8),
-              pw.Text('Total books: ${selected.length}',
-                  style: const pw.TextStyle(fontSize: 14)),
+              pw.Text('Total books: ${selected.length}', style: const pw.TextStyle(fontSize: 14)),
             ],
           ),
         ),
       );
 
+      // One page per book
       for (final book in selected) {
         final urls = book.photoUrls;
-        final coverIdx =
-        urls.isEmpty ? 0 : book.coverPhotoIndex.clamp(0, urls.length - 1);
+        final coverIdx = urls.isEmpty ? 0 : book.coverPhotoIndex.clamp(0, urls.length - 1);
 
-        pw.ImageProvider? coverImage;
-        if (urls.isNotEmpty) {
-          coverImage = await _loadImage(urls[coverIdx]);
+        final List<pw.ImageProvider?> allImages = [];
+        for (final url in urls) {
+          allImages.add(await _loadImage(url));
         }
 
+        final pw.ImageProvider? coverImage = urls.isNotEmpty ? allImages[coverIdx] : null;
+
+        // Extra photos = all except the cover
         final List<pw.ImageProvider> extraImages = [];
-        for (int i = 0; i < urls.length; i++) {
+        for (int i = 0; i < allImages.length; i++) {
           if (i == coverIdx) continue;
-          final img = await _loadImage(urls[i]);
-          if (img != null) extraImages.add(img);
+          if (allImages[i] != null) extraImages.add(allImages[i]!);
+        }
+
+        // Build extra-photos grid: 3 per row, 140x140
+        const photosPerRow = 3;
+        const photoSize = 140.0;
+        const photoSpacing = 8.0;
+
+        final List<pw.Widget> photoRows = [];
+        for (int i = 0; i < extraImages.length; i += photosPerRow) {
+          final rowPhotos = extraImages.sublist(
+              i, (i + photosPerRow).clamp(0, extraImages.length));
+          photoRows.add(pw.Row(
+            children: [
+              for (int j = 0; j < photosPerRow; j++) ...[
+                if (j < rowPhotos.length)
+                  pw.Container(
+                    width: photoSize,
+                    height: photoSize,
+                    child: pw.ClipRRect(
+                      horizontalRadius: 6,
+                      verticalRadius: 6,
+                      child: pw.Image(rowPhotos[j], fit: pw.BoxFit.cover),
+                    ),
+                  )
+                else
+                  pw.SizedBox(width: photoSize, height: photoSize),
+                if (j < photosPerRow - 1) pw.SizedBox(width: photoSpacing),
+              ],
+            ],
+          ));
+          if (i + photosPerRow < extraImages.length) {
+            photoRows.add(pw.SizedBox(height: photoSpacing));
+          }
         }
 
         pdf.addPage(
@@ -183,20 +197,15 @@ class _ExportScreenState extends State<ExportScreen> {
             build: (pw.Context ctx) => pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  book.title,
-                  style: pw.TextStyle(
-                    fontSize: 22,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
+                // Title & author
+                pw.Text(book.title,
+                    style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 4),
-                pw.Text(
-                  book.author,
-                  style: const pw.TextStyle(
-                      fontSize: 14, color: PdfColors.grey700),
-                ),
+                pw.Text(book.author,
+                    style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey700)),
                 pw.SizedBox(height: 20),
+
+                // Cover image beside text fields — original layout
                 pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
@@ -220,8 +229,7 @@ class _ExportScreenState extends State<ExportScreen> {
                         ),
                         child: pw.Center(
                           child: pw.Text('No photo',
-                              style: const pw.TextStyle(
-                                  color: PdfColors.grey500)),
+                              style: const pw.TextStyle(color: PdfColors.grey500)),
                         ),
                       ),
                     pw.SizedBox(width: 24),
@@ -230,16 +238,13 @@ class _ExportScreenState extends State<ExportScreen> {
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           _pdfField('Condition', book.condition.label),
-                          if (book.edition != null)
-                            _pdfField('Edition', book.edition!),
-                          if (book.printRun != null)
-                            _pdfField('Print run', book.printRun!),
-                          if (book.publisher != null)
-                            _pdfField('Publisher', book.publisher!),
+                          if (book.edition != null) _pdfField('Edition', book.edition!),
+                          if (book.printRun != null) _pdfField('Print run', book.printRun!),
+                          if (book.publisher != null) _pdfField('Publisher', book.publisher!),
                           if (book.publishYear != null)
                             _pdfField('Year', book.publishYear.toString()),
-                          if (book.isbn != null)
-                            _pdfField('ISBN', book.isbn!),
+                          _pdfField('ISBN',
+                              (book.isbn == null || book.isbn!.isEmpty) ? 'No ISBN' : book.isbn!),
                           _pdfField(
                             'Signed',
                             book.signed
@@ -248,110 +253,39 @@ class _ExportScreenState extends State<ExportScreen> {
                                 : 'Yes')
                                 : 'No',
                           ),
-                          if (book.provenance != null &&
-                              book.provenance!.isNotEmpty)
+                          if (book.provenance != null && book.provenance!.isNotEmpty)
                             _pdfField('Provenance', book.provenance!),
                         ],
                       ),
                     ),
                   ],
                 ),
+
                 if (book.notes != null && book.notes!.isNotEmpty) ...[
                   pw.SizedBox(height: 16),
                   pw.Text('Notes',
-                      style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                   pw.SizedBox(height: 4),
-                  pw.Text(book.notes!,
-                      style: const pw.TextStyle(fontSize: 12)),
+                  pw.Text(book.notes!, style: const pw.TextStyle(fontSize: 12)),
                 ],
+
+                // Extra photos in small grid below everything
+                if (extraImages.isNotEmpty) ...[
+                  pw.SizedBox(height: 16),
+                  pw.Text('Additional photos',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                  pw.SizedBox(height: 8),
+                  ...photoRows,
+                ],
+
                 pw.Spacer(),
                 pw.Divider(),
-                pw.Text(
-                  footer,
-                  style: const pw.TextStyle(
-                      fontSize: 10, color: PdfColors.grey500),
-                ),
+                pw.Text(footer,
+                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500)),
               ],
             ),
           ),
         );
-
-        if (extraImages.isNotEmpty) {
-          const imagesPerPage = 4;
-          for (int pageStart = 0;
-          pageStart < extraImages.length;
-          pageStart += imagesPerPage) {
-            final pageImages = extraImages.sublist(
-              pageStart,
-              (pageStart + imagesPerPage).clamp(0, extraImages.length),
-            );
-
-            final rows = <pw.Widget>[];
-            for (int i = 0; i < pageImages.length; i += 2) {
-              final left = pageImages[i];
-              final right =
-              i + 1 < pageImages.length ? pageImages[i + 1] : null;
-              rows.add(
-                pw.Row(
-                  children: [
-                    pw.Expanded(
-                      child: pw.Container(
-                        height: 340,
-                        child: pw.ClipRRect(
-                          horizontalRadius: 6,
-                          verticalRadius: 6,
-                          child: pw.Image(left, fit: pw.BoxFit.cover),
-                        ),
-                      ),
-                    ),
-                    pw.SizedBox(width: 10),
-                    pw.Expanded(
-                      child: right != null
-                          ? pw.Container(
-                        height: 340,
-                        child: pw.ClipRRect(
-                          horizontalRadius: 6,
-                          verticalRadius: 6,
-                          child:
-                          pw.Image(right, fit: pw.BoxFit.cover),
-                        ),
-                      )
-                          : pw.SizedBox(),
-                    ),
-                  ],
-                ),
-              );
-              if (i + 2 < pageImages.length) rows.add(pw.SizedBox(height: 12));
-            }
-
-            pdf.addPage(
-              pw.Page(
-                pageFormat: PdfPageFormat.a4,
-                margin: const pw.EdgeInsets.all(40),
-                build: (pw.Context ctx) => pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      '${book.title} \u2014 Additional photos',
-                      style: pw.TextStyle(
-                          fontWeight: pw.FontWeight.bold, fontSize: 14),
-                    ),
-                    pw.SizedBox(height: 16),
-                    ...rows,
-                    pw.Spacer(),
-                    pw.Divider(),
-                    pw.Text(
-                      footer,
-                      style: const pw.TextStyle(
-                          fontSize: 10, color: PdfColors.grey500),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-        }
       }
 
       await Printing.sharePdf(
@@ -360,9 +294,8 @@ class _ExportScreenState extends State<ExportScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isGenerating = false);
@@ -371,24 +304,18 @@ class _ExportScreenState extends State<ExportScreen> {
 
   pw.Widget _pdfField(String label, String value) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 8),
+      padding: const pw.EdgeInsets.only(bottom: 6),
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.SizedBox(
             width: 80,
-            child: pw.Text(
-              label,
-              style: const pw.TextStyle(
-                  fontSize: 11, color: PdfColors.grey600),
-            ),
+            child: pw.Text(label,
+                style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey600)),
           ),
           pw.Expanded(
-            child: pw.Text(
-              value,
-              style:
-              pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
-            ),
+            child: pw.Text(value,
+                style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
           ),
         ],
       ),
@@ -406,21 +333,13 @@ class _ExportScreenState extends State<ExportScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           final books = snapshot.data ?? [];
-
           if (books.isEmpty) {
             return Center(
-              child: Text(
-                'No books in your collection yet',
-                style: TextStyle(
-                  color: kTextColor.withOpacity(0.6),
-                  fontSize: 15,
-                ),
-              ),
+              child: Text('No books in your collection yet',
+                  style: TextStyle(color: kTextColor.withOpacity(0.6), fontSize: 15)),
             );
           }
-
           return Column(
             children: [
               _buildSearchBar(),
@@ -433,25 +352,16 @@ class _ExportScreenState extends State<ExportScreen> {
                     child: Row(
                       children: [
                         _ActionChip(
-                          label: 'Select all',
-                          filled: true,
-                          onTap: () => _selectAll(filteredBooks),
-                        ),
+                            label: 'Select all',
+                            filled: true,
+                            onTap: () => _selectAll(filteredBooks)),
                         const SizedBox(width: 10),
-                        _ActionChip(
-                          label: 'Clear',
-                          filled: false,
-                          onTap: _clearAll,
-                        ),
+                        _ActionChip(label: 'Clear', filled: false, onTap: _clearAll),
                         const Spacer(),
                         if (_selectedIds.isNotEmpty)
-                          Text(
-                            '${_selectedIds.length} selected',
-                            style: TextStyle(
-                              color: kTextColor.withOpacity(0.6),
-                              fontSize: 13,
-                            ),
-                          ),
+                          Text('${_selectedIds.length} selected',
+                              style: TextStyle(
+                                  color: kTextColor.withOpacity(0.6), fontSize: 13)),
                       ],
                     ),
                   );
@@ -464,13 +374,9 @@ class _ExportScreenState extends State<ExportScreen> {
                     final filteredBooks = _applySearch(books);
                     if (filteredBooks.isEmpty) {
                       return Center(
-                        child: Text(
-                          'No books match your search',
-                          style: TextStyle(
-                            color: kTextColor.withOpacity(0.6),
-                            fontSize: 15,
-                          ),
-                        ),
+                        child: Text('No books match your search',
+                            style: TextStyle(
+                                color: kTextColor.withOpacity(0.6), fontSize: 15)),
                       );
                     }
                     return ListView.builder(
@@ -482,15 +388,13 @@ class _ExportScreenState extends State<ExportScreen> {
                         return _BookExportTile(
                           book: book,
                           isSelected: isSelected,
-                          onTap: () {
-                            setState(() {
-                              if (isSelected) {
-                                _selectedIds.remove(book.id);
-                              } else {
-                                _selectedIds.add(book.id);
-                              }
-                            });
-                          },
+                          onTap: () => setState(() {
+                            if (isSelected) {
+                              _selectedIds.remove(book.id);
+                            } else {
+                              _selectedIds.add(book.id);
+                            }
+                          }),
                         );
                       },
                     );
@@ -511,8 +415,7 @@ class _ExportScreenState extends State<ExportScreen> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(40),
-                      ),
+                          borderRadius: BorderRadius.circular(40)),
                     ),
                     child: _isGenerating
                         ? const CircularProgressIndicator(color: Colors.white)
@@ -538,20 +441,14 @@ class _BookExportTile extends StatelessWidget {
   final Book book;
   final bool isSelected;
   final VoidCallback onTap;
-
-  const _BookExportTile({
-    required this.book,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const _BookExportTile(
+      {required this.book, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final imageUrl = book.photoUrls.isNotEmpty
-        ? book.photoUrls[
-    book.coverPhotoIndex.clamp(0, book.photoUrls.length - 1)]
+        ? book.photoUrls[book.coverPhotoIndex.clamp(0, book.photoUrls.length - 1)]
         : book.coverImageUrl;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -560,33 +457,21 @@ class _BookExportTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.3),
           borderRadius: BorderRadius.circular(40),
-          border: Border.all(
-            color: isSelected ? kButtonRed : Colors.white,
-            width: 1.5,
-          ),
+          border: Border.all(color: isSelected ? kButtonRed : Colors.white, width: 1.5),
         ),
         child: Row(
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: _buildThumbnail(imageUrl),
-              ),
+              child: SizedBox(width: 44, height: 44, child: _buildThumbnail(imageUrl)),
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                book.title,
-                style: const TextStyle(
-                  color: kTextColor,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(book.title,
+                  style: const TextStyle(
+                      color: kTextColor, fontSize: 15, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ),
             AnimatedContainer(
               duration: const Duration(milliseconds: 150),
@@ -596,10 +481,8 @@ class _BookExportTile extends StatelessWidget {
                 color: isSelected ? kButtonRed : Colors.transparent,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color:
-                  isSelected ? kButtonRed : kTextColor.withOpacity(0.3),
-                  width: 1.5,
-                ),
+                    color: isSelected ? kButtonRed : kTextColor.withOpacity(0.3),
+                    width: 1.5),
               ),
               child: isSelected
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
@@ -613,17 +496,19 @@ class _BookExportTile extends StatelessWidget {
 
   Widget _buildThumbnail(String? path) {
     if (path == null) {
-      return Container(color: const Color(0xFFF0EAE0),
-          child: Icon(Icons.menu_book_outlined, size: 22, color: kTextColor.withOpacity(0.3)));
+      return Container(
+          color: const Color(0xFFF0EAE0),
+          child: Icon(Icons.menu_book_outlined,
+              size: 22, color: kTextColor.withOpacity(0.3)));
     }
-    if (path.startsWith('http')) {
-      return Image.network(path, fit: BoxFit.cover);
-    }
+    if (path.startsWith('http')) return Image.network(path, fit: BoxFit.cover);
     return LocalImage(
       storedPath: path,
       fit: BoxFit.cover,
-      placeholder: (_) => Container(color: const Color(0xFFF0EAE0),
-          child: Icon(Icons.menu_book_outlined, size: 22, color: kTextColor.withOpacity(0.3))),
+      placeholder: (_) => Container(
+          color: const Color(0xFFF0EAE0),
+          child: Icon(Icons.menu_book_outlined,
+              size: 22, color: kTextColor.withOpacity(0.3))),
     );
   }
 }
@@ -632,12 +517,7 @@ class _ActionChip extends StatelessWidget {
   final String label;
   final bool filled;
   final VoidCallback onTap;
-
-  const _ActionChip({
-    required this.label,
-    required this.filled,
-    required this.onTap,
-  });
+  const _ActionChip({required this.label, required this.filled, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -648,19 +528,13 @@ class _ActionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: filled ? kButtonRed : Colors.white.withOpacity(0.3),
           borderRadius: BorderRadius.circular(40),
-          border: Border.all(
-            color: filled ? kButtonRed : Colors.white,
-            width: 1.5,
-          ),
+          border: Border.all(color: filled ? kButtonRed : Colors.white, width: 1.5),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: filled ? Colors.white : kTextColor,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: Text(label,
+            style: TextStyle(
+                color: filled ? Colors.white : kTextColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600)),
       ),
     );
   }

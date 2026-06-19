@@ -63,7 +63,6 @@ class _BookDetailViewState extends State<_BookDetailView> {
     super.dispose();
   }
 
-  // IntrinsicHeight makes both pills in a row share the same height.
   Widget _buildResponsiveRow(Widget left, Widget right, {double breakpoint = 300}) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -93,14 +92,14 @@ class _BookDetailViewState extends State<_BookDetailView> {
     border: Border.all(color: Colors.white, width: 1.5),
   );
 
-  Widget _buildPillDisplay({required String label, required String? value}) {
-    final displayValue = (value == null || value.isEmpty) ? '—' : value;
+  Widget _buildPillDisplay({required String label, required String? value, String? fallback}) {
+    // Use fallback if value is null or empty, otherwise use value, otherwise '—'
+    final displayValue = (value == null || value.isEmpty)
+        ? (fallback ?? '—')
+        : value;
     return Container(
       decoration: _pillDecoration,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      // Column layout: label top-left, value bottom-right.
-      // The value now has the full pill width available, so Flutter can wrap
-      // at word boundaries instead of breaking words mid-character.
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -144,32 +143,33 @@ class _BookDetailViewState extends State<_BookDetailView> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  book.title,
-                  style: const TextStyle(
-                    color: kTextColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Text(
+                book.title,
+                style: const TextStyle(
+                  color: kTextColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => context.push('/book/${book.id}/edit', extra: book),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(40),
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                  child: const Text(
-                    'Edit',
-                    style: TextStyle(color: kTextColor, fontWeight: FontWeight.w600),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: () => context.push('/book/${book.id}/edit', extra: book),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(40),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    child: const Text(
+                      'Edit',
+                      style: TextStyle(color: kTextColor, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
               ),
@@ -260,7 +260,8 @@ class _BookDetailViewState extends State<_BookDetailView> {
           ),
           const SizedBox(height: 12),
 
-          _buildPillDisplay(label: 'ISBN', value: book.isbn),
+          // ISBN: toon 'No ISBN' als het leeg is
+          _buildPillDisplay(label: 'ISBN', value: book.isbn, fallback: 'No ISBN'),
           const SizedBox(height: 12),
 
           if (book.provenance != null && book.provenance!.isNotEmpty) ...[
